@@ -78,6 +78,7 @@ Each WP is one PR (or less). Conventional Commits with `Implements:` / `Tests:` 
 | Q-06 | The spec pins Node 22 LTS; this machine has Node 24. | `.nvmrc` = 22 and `engines >=22`; CI must run 22. |
 | Q-07 | SDD §21 lists "human baseline data collected / go/no-go baselines recorded" in Phase 0 exit; spec.md §11 does not. Is this in Phase 0 platform scope? | Not built; recorded here as a difference to confirm (a data task, OPEN-17). |
 | Q-08 | AT-P0-08 needs **real** `/speckit.tasks` 1.2.6 output. Can we generate the fixtures with `specify` 1.2.6, or will you supply them? | Hand-written fixtures in the documented 1.2.6 format, marked as provisional, until real output is captured. |
+| Q-10 | spec.md §5 lists Decision classes clarification/consult/escalation/risk/gate, but FR-DEC-002 and SDD §8.6 also name **requirement** Decisions. Is "requirement" a sixth class, or a kind of clarification? | Not added. The five §5 classes are used; none of them can auto-resolve except consult. |
 | Q-09 | Review the initial core-neutrality deny-list (`packages/config/neutrality-denylist.txt`). | Generic embedded toolchain, RTOS, MCU and analyser names; platform infrastructure (Docker, Jira, GitHub, Jenkins, Keycloak, PostgreSQL) is **not** denied because spec §4 puts it in the core. |
 
 Notes:
@@ -89,4 +90,10 @@ Notes:
 | WP | Status |
 |---|---|
 | P0-WP1 | done locally on `phase-0/p0-wp1-monorepo` (uncommitted): workspace, strict TS, ESLint (no `any`, no `!`), Vitest + per-package coverage thresholds, `pnpm verify`, neutrality check + 12 tests (AT-P0-07 passes), ADR-0001–0003. Remaining: CI wiring (Q-01). |
+| P0-WP2 | done locally on `phase-0/p0-wp2-domain-db-audit`:
+- `@adlc/domain`: vocabularies, state machines, IDs, Decision invariants, hash chain. 100% line coverage; property-based tests.
+- `@adlc/schemas`: boundary schemas.
+- `@adlc/db`: Drizzle tables for every §5 entity, a partitioned append-only audit table, `AuditRepository`, and 11 PostgreSQL 16 integration tests.
+- ADR-0004 and ADR-0005.
+- Deferred: the WORM export (waits on Q-05); revoking UPDATE/DELETE/TRUNCATE from DB roles (P0-WP11). |
 | others | not started |
