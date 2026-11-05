@@ -86,6 +86,7 @@ Each WP is one PR (or less). Conventional Commits with `Implements:` / `Tests:` 
 | Q | Question | Assumption until answered |
 |---|---|---|
 | Q-11 | A task's `{comp:}` (e.g. `ExposureCtrl`, SDD §3.1.2) names a module, but profile components are coarse (`ecu-firmware`, SDD §5.5), and SDD §5.5 routes "by the paths a task belongs to". How does a task map to its profile component? | `{comp:}` is used when it equals a profile component name; otherwise the task's paths decide, and every path must belong to one component (ADR-0008). |
+| Q-13 | Is the wall-clock budget (S 1 h, M 4 h, L 8 h) per lease or per task in total? After a crash the next lease currently gets a fresh budget; loop detection (FR-ORC-010, Phase 3) limits repeats. | Per lease (ADR-0009). |
 | Q-12 | spec.md §5 gives `ProductProfile.version`, but the SDD §5.5 example has no version field. | `metadata.version` (semver) is required in `.adlc/product-profile.yaml`. |
 
 ### Original questions
@@ -132,4 +133,18 @@ Notes:
 - `packs/tech/ind880-c`: Draft manifest + digest-pinned Dockerfile skeleton.
 - ADR-0008.
 - Deferred: adapter contract-test suites (with the first adapter, P0-WP7 / P3-WP7); gate floor FR-PCK-002 (Phase 3). |
+| P0-WP3 | done locally on `phase-0/p0-wp3-orchestrator`:
+- `@adlc/domain`: lease timing, budget levels.
+- `@adlc/db`:
+  - Leases with fencing: global token sequence, `withFence` share-lock, SKIP LOCKED reaper.
+  - Run, budget-ledger and control-flag repositories; partition maintenance.
+- `apps/orchestrator`:
+  - Heartbeat (renew + usage + stop directive), reaper, kill switch, budgets, dispatcher skeleton.
+  - Advisory-lock leader election + leader-only job runtime.
+  - NestJS `/health`, `/ready`.
+- `packages/testing` (shared Postgres harness), `packages/telemetry` (pino logger).
+- ADR-0009.
+- **AT-P0-03 passes for the orchestrator part** (container kill + WIP resume completes with P0-WP4).
+- **AT-P0-06 passes in-process** (leader session killed → another replica leads, leases intact). The Compose primary/replica failover drill is P0-WP11.
+- Deferred: PostgreSQL job queue for workers (P0-WP4, starting containers); component locks (Phase 3); notification of the 80 % month alert (P0-WP10); OpenTelemetry spans (NFR-005). |
 | others | not started |

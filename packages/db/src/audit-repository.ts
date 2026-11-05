@@ -71,4 +71,11 @@ export class AuditRepository {
     const events = await this.list(anchor ? { fromSeq: anchor.afterSeq + 1 } : {});
     return verifyAuditChain(events, anchor?.hash ?? GENESIS_HASH);
   }
+
+  /** Creates this and next month's audit partitions (idempotent; leader maintenance, ADR-0005). */
+  async ensurePartitions(now: Date): Promise<void> {
+    const next = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
+    await this.db.execute(sql`select adlc_ensure_audit_partition(${now.toISOString().slice(0, 10)}::date)`);
+    await this.db.execute(sql`select adlc_ensure_audit_partition(${next.toISOString().slice(0, 10)}::date)`);
+  }
 }
