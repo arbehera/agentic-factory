@@ -99,6 +99,9 @@ importers:
 
   apps/orchestrator:
     dependencies:
+      '@adlc/control-plane':
+        specifier: workspace:*
+        version: link:../../packages/control-plane
       '@adlc/db':
         specifier: workspace:*
         version: link:../../packages/db
@@ -152,6 +155,22 @@ importers:
       '@types/picomatch':
         specifier: 4.0.2
         version: 4.0.2
+
+  packages/control-plane:
+    dependencies:
+      '@adlc/db':
+        specifier: workspace:*
+        version: link:../db
+      '@adlc/domain':
+        specifier: workspace:*
+        version: link:../domain
+    devDependencies:
+      '@adlc/testing':
+        specifier: workspace:*
+        version: link:../testing
+      '@types/node':
+        specifier: 22.18.12
+        version: 22.18.12
 
   packages/db:
     dependencies:

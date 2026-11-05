@@ -1,7 +1,7 @@
 import { createDb, runMigrations } from "@adlc/db";
 import { createLogger, type Logger } from "@adlc/telemetry";
 import { freshDatabase, seedProjectAndDefinition, type TestDatabase } from "@adlc/testing";
-import { ManualClock } from "../src/clock.js";
+import { ManualClock } from "@adlc/control-plane";
 import { loadConfig } from "../src/config.js";
 import type { CandidateSource, ClaimCandidate } from "../src/dispatcher.js";
 import { buildOrchestrator, type Orchestrator } from "../src/orchestrator.js";

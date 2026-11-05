@@ -10,6 +10,9 @@ export const orchestratorConfigSchema = z.object({
   REAP_INTERVAL_MS: z.coerce.number().int().positive().default(30_000),
   LEADER_POLL_MS: z.coerce.number().int().positive().default(2_000),
   MAINTENANCE_INTERVAL_MS: z.coerce.number().int().positive().default(3_600_000),
+  /** FR-ORC-014: concurrent executor slots, and how many sandbox projects may hold (pilot 8 / 2). */
+  EXECUTOR_SLOTS: z.coerce.number().int().positive().default(8),
+  SANDBOX_SLOTS: z.coerce.number().int().min(0).default(2),
 });
 export type OrchestratorConfig = z.infer<typeof orchestratorConfigSchema>;
 
@@ -18,7 +21,9 @@ export class ConfigError extends Error {
 }
 
 export function loadConfig(env: Record<string, string | undefined>): OrchestratorConfig {
-  const r = orchestratorConfigSchema.safeParse(env);
+  const r = orchestratorConfigSchema
+    .refine((c) => c.SANDBOX_SLOTS <= c.EXECUTOR_SLOTS, { path: ["SANDBOX_SLOTS"], message: "must not exceed EXECUTOR_SLOTS" })
+    .safeParse(env);
   if (!r.success) {
     throw new ConfigError(`invalid orchestrator configuration: ${r.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ")}`);
   }

@@ -1,9 +1,8 @@
 import { LEASE_TTL_MS, type Actor } from "@adlc/domain";
 import { AgentRunRepository, AuditRepository, BudgetLedgerRepository, LeaseRepository, StaleFencingTokenError } from "@adlc/db";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { budgetKeys } from "../src/budget-service.js";
+import { KillSwitchError, budgetKeys } from "@adlc/control-plane";
 import type { Claim } from "../src/dispatcher.js";
-import { KillSwitchError } from "../src/kill-switch.js";
 import { candidate, harness, skipIntegration, type Harness } from "./helpers.js";
 
 const operator: Actor = { kind: "human", id: "operator-1" };

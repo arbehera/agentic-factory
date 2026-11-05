@@ -1,6 +1,7 @@
 import {
   AGENT_RUN_KINDS,
   AGENT_RUN_STATES,
+  DISPATCH_ENVIRONMENTS,
   BUDGET_SCOPES,
   COMPONENT_LOCK_STATES,
   DECISION_CLASSES,
@@ -65,8 +66,11 @@ export const project = pgTable(
     repos: jsonb("repos").$type<string[]>().notNull().default([]),
     productProfileRef: text("product_profile_ref"),
     status: text("status").notNull(),
+    /** Sandbox projects use at most the sandbox slot quota and Draft packs (FR-ORC-014, FR-PCK-003). */
+    environment: text("environment").notNull().default("production"),
     createdAt: createdAt(),
   },
+  (t) => [check("project_environment_chk", oneOf(t.environment, DISPATCH_ENVIRONMENTS))],
 );
 
 export const productProfile = pgTable(

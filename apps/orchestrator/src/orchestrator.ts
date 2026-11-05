@@ -7,16 +7,14 @@ import {
   createDb,
   createPool,
   LeaseRepository,
+  ProjectRepository,
   type Db,
 } from "@adlc/db";
 import type { Logger } from "@adlc/telemetry";
 import type pg from "pg";
-import { BudgetService } from "./budget-service.js";
-import type { Clock } from "./clock.js";
+import { BudgetService, HeartbeatService, KillSwitch, type Clock } from "@adlc/control-plane";
 import type { OrchestratorConfig } from "./config.js";
 import { Dispatcher, type CandidateSource } from "./dispatcher.js";
-import { HeartbeatService } from "./heartbeat-service.js";
-import { KillSwitch } from "./kill-switch.js";
 import { LeaderElector } from "./leader-elector.js";
 import { Reaper } from "./reaper.js";
 import { OrchestratorRuntime } from "./runtime.js";
@@ -48,7 +46,8 @@ export function buildOrchestrator(
   const audit = new AuditRepository(db);
   const killSwitch = new KillSwitch(new ControlFlagRepository(db), deps.clock);
   const budgets = new BudgetService(new BudgetLedgerRepository(db));
-  const dispatcher = new Dispatcher(deps.candidates ?? noCandidates, leases, runs, budgets, killSwitch, deps.clock);
+  const slots = { total: config.EXECUTOR_SLOTS, sandboxQuota: config.SANDBOX_SLOTS };
+  const dispatcher = new Dispatcher(deps.candidates ?? noCandidates, leases, runs, budgets, killSwitch, new ProjectRepository(db), slots, deps.clock);
   const reaper = new Reaper(leases, runs, deps.clock);
   const elector = new LeaderElector(config.DATABASE_URL, ADVISORY_LOCKS.dispatcherLeader, config.LEADER_POLL_MS, deps.logger);
   const log = deps.logger;

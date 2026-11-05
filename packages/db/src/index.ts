@@ -9,4 +9,5 @@ export * from "./decision-repository.js";
 export * from "./gateway-session-repository.js";
 export * from "./lease-repository.js";
 export * from "./pack-version-repository.js";
+export * from "./project-repository.js";
 export * from "./schema.js";
