@@ -158,4 +158,8 @@ Notes:
 - **AT-P0-04 passes at the gateway layer** (no merge/approve/delete tools; Done, Gate and `main` refused, end to end over MCP). The platform layer needs P0-WP6 + sandbox.
 - Security review finding fixed: Decision answers are bound to owner role, non-human route and a different raiser.
 - Deferred: real Jira/GitHub clients and the gateway entrypoint (Q-04); injection screening and model-call logging (P0-WP7 / Phase 3). |
+| P0-WP4 | in progress on `phase-0/p0-wp4-executor`:
+- WSL2 rootless Docker runbook + check script.
+- Dev host: Ubuntu 24.04.1 on WSL 2.6.3 (kernel 6.6.87.2), Docker Engine **29.3.1, build c2be9cc** (docker-ce from Docker's apt repository, installed 2026-11-05).
+- Rootless setup (runbook steps 5–8) pending. |
 | others | not started |
