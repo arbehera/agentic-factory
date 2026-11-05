@@ -87,6 +87,7 @@ Each WP is one PR (or less). Conventional Commits with `Implements:` / `Tests:` 
 |---|---|---|
 | Q-11 | A task's `{comp:}` (e.g. `ExposureCtrl`, SDD §3.1.2) names a module, but profile components are coarse (`ecu-firmware`, SDD §5.5), and SDD §5.5 routes "by the paths a task belongs to". How does a task map to its profile component? | `{comp:}` is used when it equals a profile component name; otherwise the task's paths decide, and every path must belong to one component (ADR-0008). |
 | Q-13 | Is the wall-clock budget (S 1 h, M 4 h, L 8 h) per lease or per task in total? After a crash the next lease currently gets a fresh budget; loop detection (FR-ORC-010, Phase 3) limits repeats. | Per lease (ADR-0009). |
+| Q-14 | What are the working hours and holiday calendar for notification SLAs (SDD §16.3 says Asia/Kolkata; hours and holidays not given)? | `config/working-calendar.yaml`: 09:00–18:00 Mon–Fri, no holidays (dev default). The real rota and approver groups are OPEN-06/OPEN-21; `config/rota.yaml` uses placeholder addresses. |
 | Q-12 | spec.md §5 gives `ProductProfile.version`, but the SDD §5.5 example has no version field. | `metadata.version` (semver) is required in `.adlc/product-profile.yaml`. |
 
 ### Original questions
@@ -175,4 +176,12 @@ Notes:
 - `apps/signer`; dummy reviewer; reviewer sets; Jenkins verify skeleton; ADR-0012.
 - **Proven in-process:** PR → verify → verdict → signed evidence → `adlc/evidence`; a push invalidates; request-changes blocks.
 - **Deferred:** signer CLI and real GitHub (Q-04); merge-group / patch-id (P3-WP3); review dispatch (Phase 3; a minimal trigger for AT-P0-01 in P0-WP11); model streaming (Phase 1). |
+| P0-WP10 | done on `phase-0/p0-wp10-portal-notifier`:
+- Working-time deadlines and event catalogue (domain).
+- Notification outbox + inbox (db); `apps/notifier` (route, escalate, deliver; SMTP).
+- Supervisor raises Needs Human + Jira transition.
+- `apps/portal-api`: OIDC/RBAC; fleet, run detail, NDJSON live logs, inbox ack, kill switch; no approve/merge routes.
+- `apps/portal-web`: React skeleton. ADR-0013.
+- **AT-P0-02 passes** (time-compressed: on-duty → backup → Program Lead → ack).
+- **Deferred:** portal screenshots and Playwright e2e with Keycloak (P0-WP11); log-source topology (P0-WP11); full catalogue and digest (P3-WP6). |
 | others | not started |

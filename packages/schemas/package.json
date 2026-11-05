@@ -19,5 +19,8 @@
   "dependencies": {
     "@adlc/domain": "workspace:*",
     "zod": "4.1.12"
+  },
+  "devDependencies": {
+    "yaml": "2.8.1"
   }
 }

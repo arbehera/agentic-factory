@@ -66,6 +66,17 @@ export class AuditRepository {
     return rows.map(toEvent);
   }
 
+  /** Audit events correlated with a run, oldest first (FR-POR-001 run detail). */
+  async forRun(runId: string, limit = 500): Promise<ChainedAuditEvent[]> {
+    const rows = await this.db
+      .select()
+      .from(auditEvent)
+      .where(sql`${auditEvent.correlation}->>'runId' = ${runId}`)
+      .orderBy(asc(auditEvent.seq))
+      .limit(limit);
+    return rows.map(toEvent);
+  }
+
   /** Verifies the stored chain from genesis, or from an export anchor. */
   async verify(anchor?: { hash: string; afterSeq: number }): Promise<ChainVerification> {
     const events = await this.list(anchor ? { fromSeq: anchor.afterSeq + 1 } : {});
