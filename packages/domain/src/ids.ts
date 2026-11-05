@@ -24,3 +24,7 @@ export function externalTaskId(feature: string, taskId: string): string {
   if (!SPEC_TASK_ID_RE.test(taskId)) throw new InvalidIdError(`invalid task id: ${taskId}`);
   return `${feature}/${taskId}`;
 }
+
+/** Requirement-level global IDs a task may reference (SDD §9.2): `STK-n`, `SYS-n`, `HWR-n`, `CSR-n`, `SWR-n`. */
+export const REQUIREMENT_ID_PREFIXES = ["STK", "SYS", "HWR", "CSR", "SWR"] as const;
+export const REQUIREMENT_ID_RE = new RegExp(String.raw`^(${REQUIREMENT_ID_PREFIXES.join("|")})-\d+$`);

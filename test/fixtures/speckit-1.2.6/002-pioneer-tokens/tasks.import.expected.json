@@ -1,0 +1,147 @@
+[
+  {
+    "taskId": "T001",
+    "title": "Create the component skeleton and unit-test harness in src/ExposureCtrl/",
+    "userStory": null,
+    "parallel": false,
+    "requirementIds": [
+      "SWR-200"
+    ],
+    "component": "ExposureCtrl",
+    "complexity": "S",
+    "flags": [],
+    "depends": [],
+    "acceptanceCriteria": [],
+    "specRef": {
+      "feature": "002-pioneer-tokens",
+      "taskId": "T001",
+      "path": "specs/002-pioneer-tokens/tasks.md",
+      "sha": "0000000"
+    }
+  },
+  {
+    "taskId": "T002",
+    "title": "Publish the sensor interface contract in include/api/sensor.h",
+    "userStory": null,
+    "parallel": false,
+    "requirementIds": [
+      "SYS-14",
+      "SWR-201"
+    ],
+    "component": "SensorIf",
+    "complexity": "M",
+    "flags": [],
+    "depends": [
+      "T001"
+    ],
+    "acceptanceCriteria": [
+      "The contract compiles stand-alone and is listed in contracts/"
+    ],
+    "specRef": {
+      "feature": "002-pioneer-tokens",
+      "taskId": "T002",
+      "path": "specs/002-pioneer-tokens/tasks.md",
+      "sha": "0000000"
+    }
+  },
+  {
+    "taskId": "T010",
+    "title": "Implement the luminance histogram in src/ExposureCtrl/hist.c",
+    "userStory": "US1",
+    "parallel": true,
+    "requirementIds": [
+      "SWR-230"
+    ],
+    "component": "ExposureCtrl",
+    "complexity": "S",
+    "flags": [],
+    "depends": [
+      "T002"
+    ],
+    "acceptanceCriteria": [
+      "Histogram of the reference frame matches the golden histogram bit for bit"
+    ],
+    "specRef": {
+      "feature": "002-pioneer-tokens",
+      "taskId": "T010",
+      "path": "specs/002-pioneer-tokens/tasks.md",
+      "sha": "0000000"
+    }
+  },
+  {
+    "taskId": "T012",
+    "title": "Implement the exposure target table in src/ExposureCtrl/table.c",
+    "userStory": "US1",
+    "parallel": true,
+    "requirementIds": [
+      "SWR-231"
+    ],
+    "component": "ExposureCtrl",
+    "complexity": "M",
+    "flags": [],
+    "depends": [
+      "T002"
+    ],
+    "acceptanceCriteria": [
+      "Table lookups return the documented target for all 16 scene classes"
+    ],
+    "specRef": {
+      "feature": "002-pioneer-tokens",
+      "taskId": "T012",
+      "path": "specs/002-pioneer-tokens/tasks.md",
+      "sha": "0000000"
+    }
+  },
+  {
+    "taskId": "T014",
+    "title": "Implement AE step response in src/ExposureCtrl/ae.c",
+    "userStory": "US2",
+    "parallel": true,
+    "requirementIds": [
+      "SWR-233",
+      "SWR-234"
+    ],
+    "component": "ExposureCtrl",
+    "complexity": "M",
+    "flags": [
+      "hil"
+    ],
+    "depends": [
+      "T010",
+      "T012"
+    ],
+    "acceptanceCriteria": [
+      "AE converges within 8 frames after a ±2 EV step (HIL scenario Q2)",
+      "No new blocking static-analysis findings; worst-case stack ≤ 1.5 KB"
+    ],
+    "specRef": {
+      "feature": "002-pioneer-tokens",
+      "taskId": "T014",
+      "path": "specs/002-pioneer-tokens/tasks.md",
+      "sha": "0000000"
+    }
+  },
+  {
+    "taskId": "T015",
+    "title": "Harden the exposure command parser against malformed frames",
+    "userStory": "US2",
+    "parallel": false,
+    "requirementIds": [
+      "CSR-7"
+    ],
+    "component": "ExposureCtrl",
+    "complexity": "L",
+    "flags": [
+      "security",
+      "hil"
+    ],
+    "depends": [],
+    "acceptanceCriteria": [],
+    "specRef": {
+      "feature": "002-pioneer-tokens",
+      "taskId": "T015",
+      "path": "specs/002-pioneer-tokens/tasks.md",
+      "sha": "0000000"
+    }
+  }
+]
