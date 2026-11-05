@@ -119,7 +119,8 @@ echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.
   | sudo tee /etc/apt/sources.list.d/docker.list >/dev/null
 sudo apt-get update
 sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-ce-rootless-extras docker-buildx-plugin
-docker --version          # record this version in the P0-WP4 PR description
+docker --version          # paste the output to the developer running P0-WP4; it is recorded in the
+                          # P0-WP4 entry of docs/phase-reports/phase-0-plan.md (and the PR, once there is a remote)
 ```
 
 `docker-ce-rootless-extras` provides `dockerd-rootless-setuptool.sh` and RootlessKit.
