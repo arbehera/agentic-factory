@@ -205,8 +205,12 @@ cd ~/src/adlc-platform && git fetch origin && git checkout -B <branch> origin/<b
 ```bash
 cd ~/src/adlc-platform
 scripts/dev/check-rootless-docker.sh     # must end with: All checks passed.
-pnpm verify                              # the full gate, now on Linux with rootless Docker
+ADLC_REQUIRE_ROOTLESS_DOCKER=1 pnpm verify   # the full gate; Docker suites must run here, not skip
 ```
+
+On this runner, always set `ADLC_REQUIRE_ROOTLESS_DOCKER=1`. Without it, the executor and agent-image suites skip themselves when no rootless daemon is found. That is right on Windows, but on Linux it would hide a broken setup.
+
+Testcontainers also starts **Ryuk** (`testcontainers/ryuk`), its resource reaper. Ryuk removes the test PostgreSQL containers when a test process exits or crashes, and to do so it mounts the Docker socket. That is acceptable because it is test infrastructure, never an agent container. Agent containers in the tests are created through the executor and cleaned up by the tests themselves.
 
 ## Rollback
 

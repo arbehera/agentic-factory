@@ -40,6 +40,8 @@ pnpm check:neutrality      # core-neutrality deny-list check (FR-PCK-005)
 pnpm verify                # lint + typecheck + test:coverage + check:neutrality (CI entry point)
 pnpm --filter @adlc/importer import:tasks specs/NNN-x/tasks.md --sha <commit>   # tasks.md -> tasks.import.json (FR-IMP-001)
 pnpm --filter @adlc/schemas gen:json-schema   # regenerate packages/schemas/json-schema/ (committed; a test checks freshness)
+pnpm --filter @adlc/agent-runtime build:bundle   # bundle the agent runtime for its image (refuses a bundled Docker client)
+ADLC_REQUIRE_ROOTLESS_DOCKER=1 pnpm test   # Linux runner/CI: Docker suites must run, not skip (runbook: docs/runbooks/wsl2-rootless-docker.md)
 pnpm db:migrate            # drizzle migrations
 pnpm dev:up                # docker compose (infra/compose) with fakes
 pnpm test:e2e              # requires dev:up

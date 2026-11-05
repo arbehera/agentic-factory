@@ -158,11 +158,13 @@ Notes:
 - **AT-P0-04 passes at the gateway layer** (no merge/approve/delete tools; Done, Gate and `main` refused, end to end over MCP). The platform layer needs P0-WP6 + sandbox.
 - Security review finding fixed: Decision answers are bound to owner role, non-human route and a different raiser.
 - Deferred: real Jira/GitHub clients and the gateway entrypoint (Q-04); injection screening and model-call logging (P0-WP7 / Phase 3). |
-| P0-WP4 | in progress on `phase-0/p0-wp4-executor`:
-- WSL2 rootless Docker runbook + check script.
-- Dev host: Ubuntu 24.04.1 on WSL 2.6.3 (kernel 6.6.87.2), Docker Engine **29.3.1, build c2be9cc** (docker-ce from Docker's apt repository, installed 2026-11-05).
-- Rootless setup **complete** (2026-11-05): `check-rootless-docker.sh` passes all 19 checks.
-- `pnpm verify` passes on the Linux clone: 198 tests, PostgreSQL Testcontainers on rootless Docker.
-- Found and fixed: `pnpm lint` failed on a clean checkout (type-aware rules need built `dist/`); lint now builds first.
-- Next: Docker executor backend. |
+| P0-WP4 | done on `phase-0/p0-wp4-executor`:
+- `packages/executor`: hardened Docker backend; daemon baseline; trusted digests; internal network.
+- PostgreSQL job queue; `RunLauncher` / `Supervisor` / `Worker`; FR-ORC-014 slots.
+- Gateway heartbeat endpoint; `packages/control-plane`.
+- `apps/agent-runtime`: dummy agent, bundle, image.
+- WSL2 runbook + check script. ADR-0011.
+- Dev host: Ubuntu 24.04.1, WSL 2.6.3, Docker Engine 29.3.1 rootless.
+- **Proven on rootless Docker:** an agent container from the inside (uid 65532, no caps, no-new-privs, seccomp, read-only root, no socket, limits, no egress, gateway reachable); the agent image runs under it.
+- **Deferred:** containerised agent ↔ containerised gateway (P0-WP11 Compose); log archiving (P0-WP10/WP11); duplicate-PR check (needs real client, Q-04). |
 | others | not started |
