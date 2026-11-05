@@ -34,7 +34,10 @@ const PROBE = [
 async function pullDigest(image: string): Promise<string> {
   const stream = await docker.pull(image);
   await new Promise<void>((resolve, reject) => {
-    docker.modem.followProgress(stream, (err: Error | null) => (err ? reject(err) : resolve()));
+    docker.modem.followProgress(stream, (err: Error | null) => {
+      if (err) reject(err);
+      else resolve();
+    });
   });
   const info = await docker.getImage(image).inspect();
   const digest = info.RepoDigests[0];
@@ -95,7 +98,11 @@ describe.skipIf(baseline !== null)(`FR-ORC-013 Docker executor on rootless Docke
 
     const lines: LogLine[] = [];
     for await (const l of backend.logs(h, { follow: false })) lines.push(l);
-    const probe = Object.fromEntries(lines.filter((l) => l.stream === "stdout" && l.line.includes("=")).map((l) => l.line.split("=", 2)));
+    const probe: Record<string, string> = {};
+    for (const l of lines) {
+      const i = l.line.indexOf("=");
+      if (l.stream === "stdout" && i > 0) probe[l.line.slice(0, i)] = l.line.slice(i + 1);
+    }
     expect(probe).toEqual({
       uid: "65532",
       capeff: "0000000000000000",

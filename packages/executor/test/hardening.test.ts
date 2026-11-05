@@ -90,7 +90,10 @@ describe("Docker log demultiplexing", () => {
     return Buffer.concat([header, payload]);
   };
   async function* chunks(...parts: Buffer[]) {
-    for (const p of parts) yield p;
+    for (const p of parts) {
+      await Promise.resolve(); // arrive asynchronously, like a socket
+      yield p;
+    }
   }
   const collect = async (it: AsyncIterable<unknown>) => {
     const out: unknown[] = [];

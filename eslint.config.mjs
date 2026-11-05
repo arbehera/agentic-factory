@@ -13,6 +13,8 @@ export default tseslint.config(
       "@typescript-eslint/no-explicit-any": "error",
       "@typescript-eslint/no-non-null-assertion": "error",
       "@typescript-eslint/restrict-template-expressions": ["error", { allowNumber: true }],
+      // Interface parameters an implementation does not need are prefixed with `_`.
+      "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_" }],
     },
   },
   { files: ["**/*.mjs", "**/*.js"], ...tseslint.configs.disableTypeChecked },

@@ -84,6 +84,7 @@ export class DockerExecutorBackend implements ExecutorBackend {
     }
   }
 
+  /** The reason is recorded by the caller's audit event; Docker has nowhere to keep it. */
   async stop(h: RunHandle, _reason: string): Promise<void> {
     try {
       await this.docker.getContainer(h.containerId).stop({ t: this.grace });
