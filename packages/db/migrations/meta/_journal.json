@@ -36,6 +36,20 @@
       "when": 1793848991940,
       "tag": "0004_control_flag",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1793850189483,
+      "tag": "0005_gateway_session",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1793850582486,
+      "tag": "0006_decision_raised_by",
+      "breakpoints": true
     }
   ]
 }

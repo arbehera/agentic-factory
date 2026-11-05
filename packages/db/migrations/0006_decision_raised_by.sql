@@ -1,0 +1,1 @@
+ALTER TABLE "decision" ADD COLUMN "raised_by" text NOT NULL;

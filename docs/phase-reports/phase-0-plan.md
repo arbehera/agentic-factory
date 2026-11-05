@@ -147,4 +147,15 @@ Notes:
 - **AT-P0-03 passes for the orchestrator part** (container kill + WIP resume completes with P0-WP4).
 - **AT-P0-06 passes in-process** (leader session killed → another replica leads, leases intact). The Compose primary/replica failover drill is P0-WP11.
 - Deferred: PostgreSQL job queue for workers (P0-WP4, starting containers); component locks (Phase 3); notification of the 80 % month alert (P0-WP10); OpenTelemetry spans (NFR-005). |
+| P0-WP5 | done locally on `phase-0/p0-wp5-gateway`:
+- `apps/gateway`: session auth, policy, fencing, redaction, audit pipeline; MCP Streamable HTTP; health.
+- `packages/mcp-servers`: jira, github, decisions tools with platform invariants.
+- `packages/adapters`: IssueTracker and SourceControl ports, SecretProvider, redaction.
+- Fakes in `packages/testing`.
+- `rolePolicySchema` + `agents/dummy/policy.yaml`.
+- DB: `gateway_session`, `DecisionRepository`, `decision.raised_by`.
+- ADR-0010.
+- **AT-P0-04 passes at the gateway layer** (no merge/approve/delete tools; Done, Gate and `main` refused, end to end over MCP). The platform layer needs P0-WP6 + sandbox.
+- Security review finding fixed: Decision answers are bound to owner role, non-human route and a different raiser.
+- Deferred: real Jira/GitHub clients and the gateway entrypoint (Q-04); injection screening and model-call logging (P0-WP7 / Phase 3). |
 | others | not started |
