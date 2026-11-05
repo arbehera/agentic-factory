@@ -385,22 +385,42 @@ export const traceLink = pgTable(
   ],
 );
 
+/**
+ * Notifications for manual intervention (FR-NOT-001/002, SDD §16.3). Producers insert an event with
+ * an audience (outbox); the notifier resolves recipients from the rota, sets the deadline, delivers
+ * (portal inbox + email) and escalates until someone acknowledges. Duplicates of an unacknowledged
+ * event merge on the dedupe key.
+ */
 export const notification = pgTable(
   "notification",
   {
     id: uuid("id").primaryKey().defaultRandom(),
+    projectId: uuid("project_id").references(() => project.id),
     event: text("event").notNull(),
     severity: text("severity").notNull(),
-    recipients: jsonb("recipients").$type<string[]>().notNull(),
-    channel: text("channel").notNull(),
+    /** Who must act, resolved through the rota: `role:<role>` or `gate:<gate>`. */
+    audience: text("audience").notNull(),
+    title: text("title").notNull(),
+    body: text("body").notNull(),
+    link: text("link").notNull(),
+    /** Current recipients (the escalation level's people); empty until routed. */
+    recipients: jsonb("recipients").$type<string[]>().notNull().default([]),
+    channel: text("channel").notNull().default("inbox+email"),
     dedupeKey: text("dedupe_key"),
+    routedAt: ts("routed_at"),
+    dueAt: ts("due_at"),
     sentAt: ts("sent_at"),
+    /** Highest escalation level that has been delivered; -1 before the first delivery. */
+    sentLevel: integer("sent_level").notNull().default(-1),
     ackBy: text("ack_by"),
     ackAt: ts("ack_at"),
     escalationLevel: integer("escalation_level").notNull().default(0),
     createdAt: createdAt(),
   },
-  (t) => [index("notification_unacked_idx").on(t.ackAt, t.createdAt)],
+  (t) => [
+    index("notification_unacked_idx").on(t.ackAt, t.createdAt),
+    uniqueIndex("notification_open_dedupe_uq").on(t.dedupeKey).where(sql`${t.ackAt} is null`),
+  ],
 );
 
 export const budgetLedger = pgTable(

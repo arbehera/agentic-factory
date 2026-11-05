@@ -1,10 +1,14 @@
-import { agentRunMachine, isLeaseLive, type AgentRunState } from "@adlc/domain";
+import type { IssueTracker } from "@adlc/adapters";
+import { agentRunMachine, isLeaseLive, NOTIFICATION_EVENTS, stateHash, taskStatusMachine, type AgentRunState, type TaskStatus } from "@adlc/domain";
 import {
   AgentDefinitionRepository,
   AgentRunRepository,
+  AuditRepository,
   GatewaySessionRepository,
   LeaseRepository,
+  NotificationRepository,
   ProjectRepository,
+  type AgentRunRow,
   type Db,
 } from "@adlc/db";
 import { GATEWAY_TOKEN_ENV, RUN_EXIT_CODES, type ExecutorBackend, type RunHandle, type RunLimits } from "@adlc/executor";
@@ -116,21 +120,31 @@ export interface SupervisedExit {
  * Supervisor (leader only). Ends runs whose container has exited or vanished: records the outcome
  * from the exit code (RUN_EXIT_CODES), revokes the gateway session, releases the execution lease
  * and removes the container. Failed containers are kept for diagnosis until logs are archived
- * (P0-WP10/WP11).
+ * (P0-WP11). A failed or lost run escalates to a human (AT-P0-02): the Jira task goes to Needs Human
+ * and the role owner group is notified (FR-NOT-001).
  */
 export class Supervisor {
   private readonly runs: AgentRunRepository;
   private readonly leases: LeaseRepository;
   private readonly sessions: GatewaySessionRepository;
+  private readonly definitions: AgentDefinitionRepository;
+  private readonly notifications: NotificationRepository;
+  private readonly audit: AuditRepository;
 
   constructor(
     db: Db,
     private readonly executor: ExecutorBackend,
     private readonly clock: Clock,
+    private readonly logger: Logger,
+    /** The adlc-orchestrator Jira identity; absent until the real client exists (Q-04). */
+    private readonly issues?: IssueTracker,
   ) {
     this.runs = new AgentRunRepository(db);
     this.leases = new LeaseRepository(db);
     this.sessions = new GatewaySessionRepository(db);
+    this.definitions = new AgentDefinitionRepository(db);
+    this.notifications = new NotificationRepository(db);
+    this.audit = new AuditRepository(db);
   }
 
   async tick(): Promise<SupervisedExit[]> {
@@ -163,8 +177,46 @@ export class Supervisor {
         await this.leases.release({ taskKey: run.taskKey, fencingToken: lease.fencingToken }, `run ended: ${reason}`, now);
       }
       if (to === "succeeded" || to === "stopped") await this.executor.delete(handle);
+      else await this.escalateToHuman(run, to, reason, now);
       ended.push({ runId: run.id, state: to, reason });
     }
     return ended;
+  }
+
+  private async escalateToHuman(run: AgentRunRow, state: AgentRunState, reason: string, now: Date): Promise<void> {
+    const role = (await this.definitions.get(run.agentDefinitionId)).role;
+    const subject = run.taskKey ?? `run ${run.id}`;
+    await this.notifications.raise(
+      {
+        projectId: run.projectId,
+        event: "run.needs-human",
+        severity: NOTIFICATION_EVENTS["run.needs-human"].severity,
+        audience: `role:${role}`,
+        title: `${subject} needs a human: the ${role} run ${state}`,
+        body: `Run ${run.id} (${role}) for ${subject} ended ${state}: ${reason}.`,
+        link: `/runs/${run.id}`,
+        // Repeated failures of the same task merge until someone acknowledges.
+        dedupeKey: `run.needs-human:${run.taskKey ?? run.id}`,
+      },
+      now,
+    );
+    if (!this.issues || !run.taskKey) return;
+    try {
+      // Re-read before writing (hard rule 4); a human edit in between wins.
+      const issue = await this.issues.getIssue(run.taskKey);
+      if (!taskStatusMachine.canTransition(issue.status as TaskStatus, "Needs Human")) return;
+      const after = await this.issues.transition(run.taskKey, "Needs Human", issue.version);
+      await this.audit.append({
+        actor: ORCHESTRATOR_ACTOR,
+        action: "task.status",
+        target: `task:${run.taskKey}`,
+        reason: `${issue.status} -> Needs Human: run ${run.id} ${state}`,
+        beforeHash: stateHash({ key: issue.key, status: issue.status, version: issue.version }),
+        afterHash: stateHash({ key: after.key, status: after.status, version: after.version }),
+        correlation: { projectId: run.projectId, runId: run.id, taskKey: run.taskKey },
+      });
+    } catch (err) {
+      this.logger.warn({ taskKey: run.taskKey, err: (err as Error).message }, "could not move the task to Needs Human; the notification was raised");
+    }
   }
 }

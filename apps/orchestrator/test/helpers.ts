@@ -1,4 +1,5 @@
 import { createDb, runMigrations } from "@adlc/db";
+import type { IssueTracker } from "@adlc/adapters";
 import type { ExecutorBackend } from "@adlc/executor";
 import { createLogger, type Logger } from "@adlc/telemetry";
 import { freshDatabase, seedProjectAndDefinition, type TestDatabase } from "@adlc/testing";
@@ -29,11 +30,11 @@ export interface Harness {
   close(): Promise<void>;
 }
 
-export async function harness(env: Record<string, string> = {}, executor?: ExecutorBackend): Promise<Harness> {
+export async function harness(env: Record<string, string> = {}, executor?: ExecutorBackend, issues?: IssueTracker): Promise<Harness> {
   const db = await freshDatabase({ migrate: (pool) => runMigrations(createDb(pool)) });
   const clock = new ManualClock(T0);
   const source = new QueueSource();
-  const orch = buildOrchestrator(loadConfig({ DATABASE_URL: db.url, LEADER_POLL_MS: "100", ...env }), { clock, logger: silentLogger, candidates: source, ...(executor ? { executor } : {}) });
+  const orch = buildOrchestrator(loadConfig({ DATABASE_URL: db.url, LEADER_POLL_MS: "100", ...env }), { clock, logger: silentLogger, candidates: source, ...(executor ? { executor } : {}), ...(issues ? { issues } : {}) });
   const seed = await seedProjectAndDefinition(db.pool);
   return {
     db,

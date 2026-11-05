@@ -17,6 +17,7 @@
     "start": "node dist/main.js"
   },
   "dependencies": {
+    "@adlc/adapters": "workspace:*",
     "@adlc/control-plane": "workspace:*",
     "@adlc/db": "workspace:*",
     "@adlc/domain": "workspace:*",

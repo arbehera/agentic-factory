@@ -10,6 +10,7 @@ export * from "./decision-repository.js";
 export * from "./evidence-repository.js";
 export * from "./gateway-session-repository.js";
 export * from "./job-queue.js";
+export * from "./notification-repository.js";
 export * from "./lease-repository.js";
 export * from "./pack-version-repository.js";
 export * from "./project-repository.js";

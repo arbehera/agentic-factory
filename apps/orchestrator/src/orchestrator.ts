@@ -11,6 +11,7 @@ import {
   ProjectRepository,
   type Db,
 } from "@adlc/db";
+import type { IssueTracker } from "@adlc/adapters";
 import type { ExecutorBackend } from "@adlc/executor";
 import type { Logger } from "@adlc/telemetry";
 import type pg from "pg";
@@ -48,7 +49,7 @@ export interface Orchestrator {
 /** Composition root: wires repositories and services. Deterministic — no LLM anywhere (hard rule 1). */
 export function buildOrchestrator(
   config: OrchestratorConfig,
-  deps: { clock: Clock; logger: Logger; candidates?: CandidateSource; executor?: ExecutorBackend },
+  deps: { clock: Clock; logger: Logger; candidates?: CandidateSource; executor?: ExecutorBackend; issues?: IssueTracker },
 ): Orchestrator {
   const pool = createPool(config.DATABASE_URL);
   const db = createDb(pool);
@@ -79,7 +80,7 @@ export function buildOrchestrator(
       deps.clock,
       deps.logger,
     );
-    const sup = new Supervisor(db, deps.executor, deps.clock);
+    const sup = new Supervisor(db, deps.executor, deps.clock, deps.logger, deps.issues);
     launcher = launch;
     supervisor = sup;
     worker = new Worker(queue, { [START_RUN_JOB]: (j) => launch.launch(String(j.payload.runId)) }, deps.clock, deps.logger, {
