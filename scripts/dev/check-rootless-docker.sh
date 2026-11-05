@@ -32,6 +32,8 @@ else
   pass "docker CLI is the distro's own, not Docker Desktop's"
 fi
 
+check "docker config has no Docker Desktop credential helper" "remove \"credsStore\": \"desktop.exe\" from ~/.docker/config.json (runbook troubleshooting)" \
+  bash -c '! grep -qE "\"creds(Store|Helpers)\"[^}]*desktop" ~/.docker/config.json 2>/dev/null'
 check "rootful dockerd is not running" "sudo systemctl disable --now docker.service docker.socket (runbook step 5)" bash -c '! systemctl is-active --quiet docker.service'
 check "DOCKER_HOST points at the rootless socket" "export DOCKER_HOST=unix://${sock} in ~/.bashrc (runbook step 6)" test "${DOCKER_HOST:-}" = "unix://${sock}"
 check "rootless daemon answers on ${sock}" "systemctl --user start docker; see runbook step 6" docker -H "unix://${sock}" info

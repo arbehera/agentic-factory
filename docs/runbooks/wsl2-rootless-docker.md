@@ -224,6 +224,7 @@ Then turn Docker Desktop's WSL integration for Ubuntu back on (step 2, reversed)
 | Symptom | Cause and fix |
 |---|---|
 | Check "docker CLI is the distro's own" fails after a Docker Desktop update | The update turned the integration back on. Repeat step 2. |
+| `error getting credentials … docker-credential-desktop.exe: exec format error` on the first pull | Docker Desktop's integration left `"credsStore": "desktop.exe"` in `~/.docker/config.json`, and the Linux CLI can't run that Windows helper. Back up the file and delete only the `credsStore` key; keep `currentContext`. Public images then pull anonymously. |
 | `newuidmap: write to uid_map failed` | `uidmap` is missing or `/etc/subuid` has no entry. Repeat step 3, and check `grep $(id -un) /etc/subuid /etc/subgid`. |
 | `stat -fc %T /sys/fs/cgroup` prints `tmpfs` (cgroup v1 or hybrid) | In `%UserProfile%\.wslconfig` on Windows, add `[wsl2]` and `kernelCommandLine = cgroup_no_v1=all`, then run `wsl --shutdown`. |
 | `--memory`/`--cpus` fail with a cgroup error | Controllers aren't delegated. See step 3. |
