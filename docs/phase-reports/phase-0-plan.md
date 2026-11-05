@@ -72,7 +72,7 @@ Each WP is one PR (or less). Conventional Commits with `Implements:` / `Tests:` 
 |---|---|---|
 | Q-01 | Jenkins | Root `Jenkinsfile` calls `pnpm verify`. |
 | Q-02 | Human creates the remote | Branches stay local until the URL is shared; then one PR per WP. |
-| Q-03 | Rootless Docker in WSL2 on the dev machine | Container security and load tests (WP4, WP11) run in WSL2; setup steps go in a runbook with WP4. |
+| Q-03 | Rootless Docker in WSL2 on the dev machine | Container security and load tests (WP4, WP11) run in WSL2. Setup: `docs/runbooks/wsl2-rootless-docker.md`; check: `scripts/dev/check-rootless-docker.sh` (10 checks fail on 2026-11-05, before setup). |
 | Q-04 | Sandbox later; fakes now | AT-P0-01/04 built against fakes + dry-run; reported "not run" until sandbox access exists. |
 | Q-05 | SeaweedFS (Apache-2.0) | ADR-0006. S3-compatible `ObjectStore` adapter; used by the WORM export (WP11). |
 | Q-06 | Pin Node 22 everywhere | `engines` = `>=22 <23`; CI and images use 22. The dev machine needs Node 22 installed (currently 24). |
