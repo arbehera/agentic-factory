@@ -199,6 +199,19 @@ importers:
 
   packages/domain: {}
 
+  packages/executor:
+    dependencies:
+      dockerode:
+        specifier: 4.0.7
+        version: 4.0.7
+    devDependencies:
+      '@types/dockerode':
+        specifier: 3.3.42
+        version: 3.3.42
+      '@types/node':
+        specifier: 22.18.12
+        version: 22.18.12
+
   packages/mcp-servers:
     dependencies:
       '@adlc/adapters':
@@ -1119,6 +1132,9 @@ packages:
   '@types/docker-modem@3.0.6':
     resolution: {integrity: sha512-yKpAGEuKRSS8wwx0joknWxsmLha78wNMe9R2S3UNsVOkZded8UqOrV8KoeDXoXsjndxwyF3eIhyClGbO1SEhEg==}
 
+  '@types/dockerode@3.3.42':
+    resolution: {integrity: sha512-U1jqHMShibMEWHdxYhj3rCMNCiLx5f35i4e3CEUuW+JSSszc/tVqc6WCAPdhwBymG5R/vgbcceagK0St7Cq6Eg==}
+
   '@types/dockerode@4.0.2':
     resolution: {integrity: sha512-hA4myZ0XzwHG/p/eCLElYsQS3y1XZfvi6AfLFKVp1SNpPkO6J3xLatacAFVkReTxXRoIa3eHJmhJi9w6I3+zNA==}
 
@@ -1559,6 +1575,10 @@ packages:
 
   dockerode@4.0.12:
     resolution: {integrity: sha512-/bCZd6KlGcjZO8Buqmi/vXuqEGVEZ0PNjx/biBNqJD3MhK9DmdiAuKxqfNhflgDESDIiBz3qF+0e55+CpnrUcw==}
+    engines: {node: '>= 8.0'}
+
+  dockerode@4.0.7:
+    resolution: {integrity: sha512-R+rgrSRTRdU5mH14PZTCPZtW/zw3HDWNTS/1ZAQpL/5Upe/ye5K9WQkIysu4wBoiMwKynsz0a8qWuGsHgEvSAA==}
     engines: {node: '>= 8.0'}
 
   drizzle-kit@0.31.5:
@@ -3533,6 +3553,12 @@ snapshots:
       '@types/node': 22.18.12
       '@types/ssh2': 1.15.6
 
+  '@types/dockerode@3.3.42':
+    dependencies:
+      '@types/docker-modem': 3.0.6
+      '@types/node': 22.18.12
+      '@types/ssh2': 1.15.6
+
   '@types/dockerode@4.0.2':
     dependencies:
       '@types/docker-modem': 3.0.6
@@ -4033,6 +4059,18 @@ snapshots:
       - supports-color
 
   dockerode@4.0.12:
+    dependencies:
+      '@balena/dockerignore': 1.0.2
+      '@grpc/grpc-js': 1.14.7
+      '@grpc/proto-loader': 0.7.15
+      docker-modem: 5.0.7
+      protobufjs: 7.6.6
+      tar-fs: 2.1.5
+      uuid: 10.0.0
+    transitivePeerDependencies:
+      - supports-color
+
+  dockerode@4.0.7:
     dependencies:
       '@balena/dockerignore': 1.0.2
       '@grpc/grpc-js': 1.14.7
