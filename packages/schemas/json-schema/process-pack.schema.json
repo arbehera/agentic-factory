@@ -1,0 +1,107 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]*$"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "processes": {
+      "minItems": 1,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "informationItems": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "gateMapping": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string",
+        "enum": [
+          "G0",
+          "G1",
+          "G2",
+          "G3",
+          "G4",
+          "G5",
+          "G6",
+          "G-CR",
+          "G2Δ",
+          "G3Δ",
+          "G4Δ"
+        ]
+      },
+      "additionalProperties": {
+        "type": "array",
+        "items": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "templates": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^(?!\\/)(?!.*(^|\\/)\\.\\.?(\\/|$))[A-Za-z0-9._/-]+$"
+      }
+    },
+    "constitutionArticles": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^(?!\\/)(?!.*(^|\\/)\\.\\.?(\\/|$))[A-Za-z0-9._/-]+$"
+      }
+    }
+  },
+  "required": [
+    "id",
+    "version",
+    "processes",
+    "informationItems",
+    "gateMapping",
+    "templates",
+    "constitutionArticles"
+  ],
+  "additionalProperties": false
+}

@@ -14,7 +14,7 @@ export type AgentRunKind = (typeof AGENT_RUN_KINDS)[number];
 export const PACK_KINDS = ["process", "tech"] as const;
 export type PackKind = (typeof PACK_KINDS)[number];
 
-/** Lifecycle transitions are FR-PCK-003 (P0-WP8). */
+/** Lifecycle transitions: `packStatusMachine` in pack.ts (FR-PCK-003). */
 export const PACK_STATUSES = ["Draft", "Qualified", "Restricted", "Retired"] as const;
 export type PackStatus = (typeof PACK_STATUSES)[number];
 

@@ -6,6 +6,9 @@ import pg from "pg";
 import * as schema from "./schema.js";
 
 export type Db = NodePgDatabase<typeof schema>;
+/** A transaction handle; repositories accept either so callers can compose them atomically. */
+export type DbTx = Parameters<Parameters<Db["transaction"]>[0]>[0];
+export type DbExecutor = Db | DbTx;
 
 export const MIGRATIONS_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../migrations");
 

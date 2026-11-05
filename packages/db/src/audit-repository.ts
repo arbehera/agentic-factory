@@ -3,7 +3,7 @@ import { auditEventInputSchema } from "@adlc/schemas";
 import { and, asc, desc, gte, lte, sql } from "drizzle-orm";
 import { ADVISORY_LOCKS } from "./advisory-locks.js";
 import { auditEvent } from "./audit-table.js";
-import type { Db } from "./client.js";
+import type { DbExecutor } from "./client.js";
 
 type Row = typeof auditEvent.$inferSelect;
 
@@ -25,9 +25,12 @@ function toEvent(r: Row): ChainedAuditEvent {
 
 /** Append-only, hash-chained audit log (hard rule 11, NFR-006). */
 export class AuditRepository {
-  constructor(private readonly db: Db) {}
+  constructor(private readonly db: DbExecutor) {}
 
-  /** Validates and appends one event. Appends are serialised so the chain stays linear. */
+  /**
+   * Validates and appends one event. Appends are serialised so the chain stays linear. Inside a
+   * caller's transaction this is a savepoint, so the event commits or rolls back with the change.
+   */
   async append(input: AuditEventContent, now: Date = new Date()): Promise<ChainedAuditEvent> {
     const content = auditEventInputSchema.parse(input);
     return this.db.transaction(async (tx) => {

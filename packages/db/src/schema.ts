@@ -93,6 +93,8 @@ export const packVersion = pgTable(
     semver: text("semver").notNull(),
     status: text("status").notNull().default("Draft"),
     imageDigest: text("image_digest"),
+    /** Hash of the canonical manifest; a released pack version is immutable. */
+    contentHash: text("content_hash").notNull(),
     ownerId: text("owner_id").notNull(),
     createdAt: createdAt(),
   },

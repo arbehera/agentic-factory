@@ -1,0 +1,1 @@
+ALTER TABLE "pack_version" ADD COLUMN "content_hash" text NOT NULL;
