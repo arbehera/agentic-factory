@@ -45,6 +45,8 @@ The setup below gives Ubuntu its own **rootless** Docker daemon, running as your
 
 Run everything in an **Ubuntu** shell as your normal user, unless a step says PowerShell. Use `sudo` only where it is written.
 
+**Opening the Ubuntu shell:** run `wsl -d Ubuntu` in PowerShell, or open **Ubuntu** from the Start menu or Windows Terminal. The prompt looks like `arabinda@PIN-N0275:~$`; a `PS C:\...>` prompt means you are still in PowerShell. `sudo` asks for your **Ubuntu** password, the one set when the distro was installed, not your Windows password.
+
 ### 1. systemd (verify only)
 
 ```bash
