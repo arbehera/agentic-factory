@@ -8,7 +8,7 @@
   },
   "scripts": {
     "build": "turbo run build",
-    "lint": "eslint .",
+    "lint": "turbo run build --output-logs=errors-only && eslint .",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "test:coverage": "turbo run test:coverage",
