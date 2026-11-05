@@ -13,7 +13,7 @@ const policy = rolePolicySchema.parse({
 });
 
 const ctx: ToolContext = {
-  run: { runId: "run-1", role: "engineer", projectId: "p1", jiraProjectKey: "PIL", repos: ["org/product"], taskKey: "PIL-1", fencingToken: 5n },
+  run: { runId: "run-1", role: "engineer", projectId: "p1", jiraProjectKey: "PIL", repos: ["org/product"], taskKey: "PIL-1", fencingToken: 5n, reviewTarget: null },
   policy,
   now: new Date("2026-11-05T08:00:00Z"),
 };
@@ -52,7 +52,7 @@ describe("P0-WP5 gateway tools", () => {
       list: () => Promise.resolve([...decisions.values()]),
       answer: (id: string, outcome: string) => Promise.resolve({ ...decisionRow({ id }), status: "decided", outcome }),
     };
-    deps = { jira, github, decisions: repo as unknown as DecisionRepository };
+    deps = { jira, github, decisions: repo as unknown as DecisionRepository, evidence: null as never, modelCalls: null as never };
   });
 
   const denied = (p: Promise<unknown>, msg: RegExp) => expect(p).rejects.toSatisfy((e: unknown) => e instanceof PolicyDeniedError && msg.test(e.message));

@@ -83,6 +83,7 @@ export class RunLauncher {
           ADLC_TASK_KEY: run.taskKey,
           ADLC_ROLE: definition.role,
           ADLC_REPO: project.repos[0] ?? "",
+          ADLC_MODEL: definition.modelId,
         },
       });
       await this.runs.transition(runId, "starting", ORCHESTRATOR_ACTOR, "container created", now, { containerId: handle.containerId });

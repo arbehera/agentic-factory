@@ -14,6 +14,7 @@ import {
   PACK_STATUSES,
   PIPELINE_STEPS,
   STEP_STATUSES,
+  VERDICTS,
 } from "@adlc/domain";
 import { sql, type SQL } from "drizzle-orm";
 import {
@@ -31,6 +32,7 @@ import {
   text,
   timestamp,
   unique,
+  uniqueIndex,
   uuid,
   type AnyPgColumn,
 } from "drizzle-orm/pg-core";
@@ -281,23 +283,79 @@ export interface ReviewerVerdictRef {
   modelCallId: string;
 }
 
-/** Write-once semantics and the signer preconditions are added in P0-WP7 (FR-EVD-001/002). */
+/**
+ * Model calls the gateway proxied, one row per provider response (FR-EVD-002 condition c).
+ * Append-only (migration 0010). Only hashes of the request and response are kept here.
+ */
+export const modelCall = pgTable(
+  "model_call",
+  {
+    id: text("id").primaryKey(),
+    runId: uuid("run_id").notNull().references(() => agentRun.id),
+    model: text("model").notNull(),
+    inputTokens: integer("input_tokens").notNull(),
+    outputTokens: integer("output_tokens").notNull(),
+    requestHash: text("request_hash").notNull(),
+    responseHash: text("response_hash").notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [index("model_call_run_idx").on(t.runId)],
+);
+
+/**
+ * Reviewer verdicts (FR-EVD-001), written through the gateway under the adlc-reviewer identity.
+ * Write-once (migration 0010): one verdict per reviewer role per PR head; a new push needs new
+ * verdicts on the new head.
+ */
+export const reviewerVerdict = pgTable(
+  "reviewer_verdict",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    projectId: uuid("project_id").notNull().references(() => project.id),
+    repo: text("repo").notNull(),
+    prNumber: integer("pr_number").notNull(),
+    headSha: text("head_sha").notNull(),
+    reviewerRole: text("reviewer_role").notNull(),
+    reviewerRunId: uuid("reviewer_run_id").notNull().references(() => agentRun.id),
+    verdict: text("verdict").notNull(),
+    summary: text("summary").notNull(),
+    modelCallId: text("model_call_id").notNull().references(() => modelCall.id),
+    verdictHash: text("verdict_hash").notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    unique("reviewer_verdict_head_role_uq").on(t.repo, t.prNumber, t.headSha, t.reviewerRole),
+    // A model call backs at most one verdict (FR-EVD-002 c): no reusing one call for many reviews.
+    unique("reviewer_verdict_model_call_uq").on(t.modelCallId),
+    check("reviewer_verdict_value_chk", oneOf(t.verdict, VERDICTS)),
+    check("reviewer_verdict_sha_chk", sql`${t.headSha} ~ '^[0-9a-f]{40}$'`),
+  ],
+);
+
+/** Signed review evidence (FR-EVD-002). Write-once (migration 0010). */
 export const evidenceRecord = pgTable(
   "evidence_record",
   {
     id: uuid("id").primaryKey().defaultRandom(),
     projectId: uuid("project_id").notNull().references(() => project.id),
+    repo: text("repo").notNull(),
+    authorRole: text("author_role").notNull(),
     prNumber: integer("pr_number").notNull(),
     headSha: text("head_sha").notNull(),
     mergeGroupSha: text("merge_group_sha"),
     patchId: text("patch_id").notNull(),
     reviewerVerdicts: jsonb("reviewer_verdicts").$type<ReviewerVerdictRef[]>().notNull().default([]),
     checkResults: jsonb("check_results").$type<unknown[]>().notNull().default([]),
+    /** DSSE envelope; moves to the object store with the WORM export (ADR-0006). */
+    envelope: jsonb("envelope").$type<Record<string, unknown>>().notNull(),
     envelopeRef: text("envelope_ref"),
     status: text("status").notNull(),
     createdAt: createdAt(),
   },
-  (t) => [index("evidence_pr_head_idx").on(t.projectId, t.prNumber, t.headSha)],
+  (t) => [
+    index("evidence_pr_head_idx").on(t.projectId, t.prNumber, t.headSha),
+    uniqueIndex("evidence_head_uq").on(t.repo, t.prNumber, t.headSha).where(sql`${t.mergeGroupSha} is null`),
+  ],
 );
 
 export const traceNode = pgTable(
@@ -402,6 +460,10 @@ export const gatewaySession = pgTable(
     projectId: uuid("project_id").notNull().references(() => project.id),
     taskKey: text("task_key"),
     fencingToken: bigint("fencing_token", { mode: "bigint" }),
+    /** Review sessions are bound to the one PR head they review (all three set, or none). */
+    reviewRepo: text("review_repo"),
+    reviewPrNumber: integer("review_pr_number"),
+    reviewHeadSha: text("review_head_sha"),
     issuedAt: ts("issued_at").notNull(),
     expiresAt: ts("expires_at").notNull(),
     revokedAt: ts("revoked_at"),
@@ -409,6 +471,10 @@ export const gatewaySession = pgTable(
   (t) => [
     index("gateway_session_run_idx").on(t.runId),
     check("gateway_session_fence_chk", sql`(${t.taskKey} is null) = (${t.fencingToken} is null)`),
+    check(
+      "gateway_session_review_chk",
+      sql`(${t.reviewRepo} is null) = (${t.reviewPrNumber} is null) and (${t.reviewPrNumber} is null) = (${t.reviewHeadSha} is null)`,
+    ),
   ],
 );
 

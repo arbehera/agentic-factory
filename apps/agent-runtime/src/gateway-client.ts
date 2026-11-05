@@ -39,6 +39,25 @@ export class GatewayClient {
     return JSON.parse(text) as T;
   }
 
+  /** Claude Messages API through the gateway proxy (non-streaming); the gateway holds the key. */
+  async model(body: Record<string, unknown>): Promise<{ id: string; content: { type: string; text?: string }[] }> {
+    let res: Response;
+    try {
+      res = await fetch(`${this.baseUrl}/model/v1/messages`, {
+        method: "POST",
+        headers: { "content-type": "application/json", authorization: `Bearer ${this.token}` },
+        body: JSON.stringify(body),
+      });
+    } catch (err) {
+      throw new GatewayUnavailableError(`model call failed: ${(err as Error).message}`);
+    }
+    const json = (await res.json().catch(() => ({}))) as { id?: unknown; content?: unknown; error?: { message?: string } };
+    if (!res.ok || typeof json.id !== "string" || !Array.isArray(json.content)) {
+      throw new ToolCallError("model.messages", `HTTP ${res.status}: ${json.error?.message ?? "invalid response"}`);
+    }
+    return { id: json.id, content: json.content as { type: string; text?: string }[] };
+  }
+
   async heartbeat(usage: { tokens: number; costUsd: number }): Promise<HeartbeatDirective> {
     let res: Response;
     try {

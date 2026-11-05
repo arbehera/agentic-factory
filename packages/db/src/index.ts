@@ -7,6 +7,7 @@ export * from "./budget-ledger-repository.js";
 export * from "./client.js";
 export * from "./control-flag-repository.js";
 export * from "./decision-repository.js";
+export * from "./evidence-repository.js";
 export * from "./gateway-session-repository.js";
 export * from "./job-queue.js";
 export * from "./lease-repository.js";

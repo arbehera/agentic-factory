@@ -54,6 +54,9 @@ importers:
       '@adlc/adapters':
         specifier: workspace:*
         version: link:../../packages/adapters
+      '@adlc/attestation':
+        specifier: workspace:*
+        version: link:../../packages/attestation
       '@adlc/control-plane':
         specifier: workspace:*
         version: link:../../packages/control-plane
@@ -69,9 +72,15 @@ importers:
       '@adlc/mcp-servers':
         specifier: workspace:*
         version: link:../../packages/mcp-servers
+      '@adlc/pack-sdk':
+        specifier: workspace:*
+        version: link:../../packages/pack-sdk
       '@adlc/schemas':
         specifier: workspace:*
         version: link:../../packages/schemas
+      '@adlc/signer':
+        specifier: workspace:*
+        version: link:../signer
       '@adlc/testing':
         specifier: workspace:*
         version: link:../../packages/testing
@@ -207,7 +216,45 @@ importers:
         specifier: 8.15.5
         version: 8.15.5
 
+  apps/signer:
+    dependencies:
+      '@adlc/adapters':
+        specifier: workspace:*
+        version: link:../../packages/adapters
+      '@adlc/attestation':
+        specifier: workspace:*
+        version: link:../../packages/attestation
+      '@adlc/db':
+        specifier: workspace:*
+        version: link:../../packages/db
+      '@adlc/domain':
+        specifier: workspace:*
+        version: link:../../packages/domain
+      '@adlc/schemas':
+        specifier: workspace:*
+        version: link:../../packages/schemas
+      '@adlc/telemetry':
+        specifier: workspace:*
+        version: link:../../packages/telemetry
+    devDependencies:
+      '@adlc/testing':
+        specifier: workspace:*
+        version: link:../../packages/testing
+      '@types/node':
+        specifier: 22.18.12
+        version: 22.18.12
+
   packages/adapters:
+    devDependencies:
+      '@types/node':
+        specifier: 22.18.12
+        version: 22.18.12
+
+  packages/attestation:
+    dependencies:
+      '@adlc/domain':
+        specifier: workspace:*
+        version: link:../domain
     devDependencies:
       '@types/node':
         specifier: 22.18.12

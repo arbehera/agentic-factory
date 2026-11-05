@@ -3,6 +3,12 @@ import { and, eq, gt, isNull } from "drizzle-orm";
 import type { Db } from "./client.js";
 import { gatewaySession, project } from "./schema.js";
 
+export interface ReviewTarget {
+  repo: string;
+  prNumber: number;
+  headSha: string;
+}
+
 export interface GatewaySessionContext {
   runId: string;
   role: string;
@@ -11,6 +17,8 @@ export interface GatewaySessionContext {
   repos: string[];
   taskKey: string | null;
   fencingToken: bigint | null;
+  /** Set for review runs: the only PR head this session may record a verdict on. */
+  reviewTarget: ReviewTarget | null;
 }
 
 export class InvalidSessionError extends Error {
@@ -25,11 +33,19 @@ export class GatewaySessionRepository {
 
   /** Issues a token for a run; the raw token is returned once and never stored. */
   async issue(
-    input: { runId: string; role: string; projectId: string; taskKey: string | null; fencingToken: bigint | null; expiresAt: Date },
+    input: { runId: string; role: string; projectId: string; taskKey: string | null; fencingToken: bigint | null; expiresAt: Date; reviewTarget?: ReviewTarget },
     now: Date,
   ): Promise<string> {
     const token = randomBytes(32).toString("base64url");
-    await this.db.insert(gatewaySession).values({ ...input, tokenHash: hashToken(token), issuedAt: now });
+    const { reviewTarget, ...rest } = input;
+    await this.db.insert(gatewaySession).values({
+      ...rest,
+      tokenHash: hashToken(token),
+      issuedAt: now,
+      reviewRepo: reviewTarget?.repo ?? null,
+      reviewPrNumber: reviewTarget?.prNumber ?? null,
+      reviewHeadSha: reviewTarget?.headSha ?? null,
+    });
     return token;
   }
 
@@ -44,12 +60,19 @@ export class GatewaySessionRepository {
         fencingToken: gatewaySession.fencingToken,
         jiraProjectKey: project.jiraProjectKey,
         repos: project.repos,
+        reviewRepo: gatewaySession.reviewRepo,
+        reviewPrNumber: gatewaySession.reviewPrNumber,
+        reviewHeadSha: gatewaySession.reviewHeadSha,
       })
       .from(gatewaySession)
       .innerJoin(project, eq(project.id, gatewaySession.projectId))
       .where(and(eq(gatewaySession.tokenHash, hashToken(token)), isNull(gatewaySession.revokedAt), gt(gatewaySession.expiresAt, now)));
     if (!row) throw new InvalidSessionError("unknown, expired or revoked gateway session");
-    return row;
+    const { reviewRepo, reviewPrNumber, reviewHeadSha, ...ctx } = row;
+    return {
+      ...ctx,
+      reviewTarget: reviewRepo !== null && reviewPrNumber !== null && reviewHeadSha !== null ? { repo: reviewRepo, prNumber: reviewPrNumber, headSha: reviewHeadSha } : null,
+    };
   }
 
   /** Revokes every session of a run (run end, kill, restart from checkpoint). */
