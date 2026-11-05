@@ -161,5 +161,8 @@ Notes:
 | P0-WP4 | in progress on `phase-0/p0-wp4-executor`:
 - WSL2 rootless Docker runbook + check script.
 - Dev host: Ubuntu 24.04.1 on WSL 2.6.3 (kernel 6.6.87.2), Docker Engine **29.3.1, build c2be9cc** (docker-ce from Docker's apt repository, installed 2026-11-05).
-- Rootless setup (runbook steps 5–8) pending. |
+- Rootless setup **complete** (2026-11-05): `check-rootless-docker.sh` passes all 19 checks.
+- `pnpm verify` passes on the Linux clone: 198 tests, PostgreSQL Testcontainers on rootless Docker.
+- Found and fixed: `pnpm lint` failed on a clean checkout (type-aware rules need built `dist/`); lint now builds first.
+- Next: Docker executor backend. |
 | others | not started |
