@@ -1,6 +1,7 @@
 import { hasFreeSlot, leaseDeadline, type AgentRunKind, type SlotPolicy, type TaskComplexity } from "@adlc/domain";
-import { LeaseHeldError, type AgentRunRepository, type LeaseRepository, type ProjectRepository } from "@adlc/db";
+import { LeaseHeldError, type AgentRunRepository, type JobQueue, type LeaseRepository, type ProjectRepository } from "@adlc/db";
 import type { BudgetService, Clock, KillSwitch } from "@adlc/control-plane";
+import { START_RUN_JOB } from "./launcher.js";
 import { ORCHESTRATOR_ACTOR, retireRun } from "./runs.js";
 
 /** A task that is ready to claim. The ready frontier (FR-ORC-005) supplies these in Phase 2. */
@@ -33,8 +34,8 @@ export interface DispatchResult {
  * Dispatcher skeleton (leader only, FR-ORC-015). Each tick: stop if the kill switch is engaged
  * (FR-ORC-012); skip projects whose daily budget is exhausted (FR-ORC-011) or with no free executor
  * slot (FR-ORC-014, sandbox quota); otherwise create a
- * run and take the task lease with a fresh fencing token (FR-ORC-008). Starting the container is
- * the executor's job (P0-WP4).
+ * run, take the task lease with a fresh fencing token (FR-ORC-008) and enqueue the container start
+ * for a worker (RunLauncher).
  */
 export class Dispatcher {
   constructor(
@@ -45,6 +46,7 @@ export class Dispatcher {
     private readonly killSwitch: KillSwitch,
     private readonly projects: ProjectRepository,
     private readonly slots: SlotPolicy,
+    private readonly queue: JobQueue,
     private readonly clock: Clock,
     private readonly batchSize = 10,
   ) {}
@@ -71,6 +73,8 @@ export class Dispatcher {
       try {
         const { lease, displaced } = await this.leases.acquire({ taskKey: c.taskKey, runId: run.id, deadlineAt: leaseDeadline(now, c.complexity), now });
         if (displaced) await retireRun(this.runs, displaced.runId, "lease expired before reaping; task re-claimed", now);
+        // A worker starts the container (RunLauncher). Enqueueing is idempotent per run.
+        await this.queue.enqueue({ kind: START_RUN_JOB, payload: { runId: run.id }, dedupeKey: `${START_RUN_JOB}:${run.id}`, runAfter: now });
         result.claimed.push({ taskKey: c.taskKey, runId: run.id, fencingToken: lease.fencingToken });
       } catch (err) {
         if (!(err instanceof LeaseHeldError)) throw err;

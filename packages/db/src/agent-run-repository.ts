@@ -1,5 +1,5 @@
 import { agentRunMachine, stateHash, type Actor, type ActiveRuns, type AgentRunKind, type AgentRunState } from "@adlc/domain";
-import { eq, inArray, sql } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, sql } from "drizzle-orm";
 import { AuditRepository } from "./audit-repository.js";
 import type { DbExecutor } from "./client.js";
 import { agentRun, project } from "./schema.js";
@@ -100,5 +100,10 @@ export class AgentRunRepository {
       .innerJoin(project, eq(project.id, agentRun.projectId))
       .where(inArray(agentRun.state, [...SLOT_HOLDING_STATES]));
     return { total: Number(row?.total ?? 0), sandbox: Number(row?.sandbox ?? 0) };
+  }
+
+  /** Runs that own a container and may still be executing (supervisor input). */
+  async listWithContainer(states: readonly AgentRunState[] = ["starting", "running"]): Promise<AgentRunRow[]> {
+    return this.db.select().from(agentRun).where(and(inArray(agentRun.state, [...states]), isNotNull(agentRun.containerId)));
   }
 }

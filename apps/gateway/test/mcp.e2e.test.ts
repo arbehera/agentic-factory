@@ -5,6 +5,8 @@ import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
 import type { INestApplication } from "@nestjs/common";
 import { NestFactory } from "@nestjs/core";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { KillSwitch } from "@adlc/control-plane";
+import { ControlFlagRepository } from "@adlc/db";
 import { GatewayModule } from "../src/http/app.module.js";
 import { gatewayHarness, skipIntegration, type GatewayHarness } from "./helpers.js";
 
@@ -84,5 +86,24 @@ describe.skipIf(skipIntegration)("P0-WP5 MCP over HTTP", () => {
     const r = await c.callTool({ name: "read_issue", arguments: { key: "PILOT-1" } });
     expect(r).toMatchObject({ isError: true, content: [{ text: "tool failed (IssueNotFoundError)" }] });
     await c.close();
+  });
+
+  it("FR-ORC-008 POST /runtime/heartbeat renews the run's own lease and returns the directive", async () => {
+    const beat = (token: string, body: unknown = { usage: { tokens: 5, costUsd: 0.01 } }) =>
+      fetch(`${base}/runtime/heartbeat`, { method: "POST", headers: { "content-type": "application/json", authorization: `Bearer ${token}` }, body: JSON.stringify(body) });
+    const ok = await beat(h.token);
+    expect(ok.status).toBe(200);
+    expect(await ok.json()).toMatchObject({ directive: "continue", budgets: { task: "ok" } });
+    expect((await beat("forged")).status).toBe(401);
+    expect((await beat(h.token, { usage: { tokens: -1, costUsd: 0 } })).status).toBe(400);
+    expect((await beat(h.token, { fencingToken: "999" })).status).toBe(400); // the token comes from the session only
+
+    await new KillSwitch(new ControlFlagRepository(h.db), h.clock).engage({ kind: "human", id: "op" }, "drill");
+    expect(await (await beat(h.token)).json()).toMatchObject({ directive: "stop-after-step" });
+
+    h.clock.current = new Date(h.clock.current.getTime() + 16 * 60_000); // past the 15-minute TTL
+    const gone = await beat(h.token);
+    expect(gone.status).toBe(409);
+    expect(await gone.json()).toEqual({ directive: "stop", reason: "lease lost" });
   });
 });

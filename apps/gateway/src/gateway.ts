@@ -11,6 +11,7 @@ import {
 } from "@adlc/db";
 import { toolId, type ToolContext, type ToolDef } from "@adlc/mcp-servers";
 import type { RolePolicy } from "@adlc/schemas";
+import type { HeartbeatReply, HeartbeatService } from "@adlc/control-plane";
 import type { Logger } from "@adlc/telemetry";
 import { ZodError } from "zod";
 
@@ -38,6 +39,8 @@ export interface GatewayDeps {
   /** Built with credentials from `secrets`; tools only ever receive these instances (hard rule 9). */
   adapters: { jira: IssueTracker; github: SourceControl };
   secrets: SecretProvider;
+  /** Lease renewal, usage and stop directives (FR-ORC-008, 011, 012). */
+  heartbeats: HeartbeatService;
   clock: Clock;
   logger: Logger;
 }
@@ -74,6 +77,15 @@ export class Gateway {
   /** Resolves a bearer token; throws InvalidSessionError for anything not live. */
   authenticate(token: string): Promise<GatewaySessionContext> {
     return this.sessions.resolve(token, this.deps.clock.now());
+  }
+
+  /**
+   * Agent heartbeat. The fencing token comes from the session, never from the request, so a run can
+   * only renew its own lease. Stale or expired leases throw: the agent must stop.
+   */
+  async heartbeat(run: GatewaySessionContext, usage: { tokens: number; costUsd: number }): Promise<HeartbeatReply> {
+    if (run.taskKey === null || run.fencingToken === null) throw new InvalidArgumentsError("this session holds no task lease");
+    return this.deps.heartbeats.beat({ runId: run.runId, projectId: run.projectId, taskKey: run.taskKey, fencingToken: run.fencingToken, usage });
   }
 
   /** Tools of `server` this session's role may call (what the agent sees in tools/list). */

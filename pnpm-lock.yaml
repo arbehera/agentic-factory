@@ -36,11 +36,75 @@ importers:
         specifier: 3.2.4
         version: 3.2.4(@types/node@22.18.12)(tsx@4.20.6)(yaml@2.9.1)
 
+  apps/agent-runtime:
+    dependencies:
+      '@adlc/executor':
+        specifier: workspace:*
+        version: link:../../packages/executor
+      '@adlc/telemetry':
+        specifier: workspace:*
+        version: link:../../packages/telemetry
+      '@modelcontextprotocol/sdk':
+        specifier: 1.17.5
+        version: 1.17.5
+      zod:
+        specifier: 4.1.12
+        version: 4.1.12
+    devDependencies:
+      '@adlc/adapters':
+        specifier: workspace:*
+        version: link:../../packages/adapters
+      '@adlc/control-plane':
+        specifier: workspace:*
+        version: link:../../packages/control-plane
+      '@adlc/db':
+        specifier: workspace:*
+        version: link:../../packages/db
+      '@adlc/domain':
+        specifier: workspace:*
+        version: link:../../packages/domain
+      '@adlc/gateway':
+        specifier: workspace:*
+        version: link:../gateway
+      '@adlc/mcp-servers':
+        specifier: workspace:*
+        version: link:../../packages/mcp-servers
+      '@adlc/schemas':
+        specifier: workspace:*
+        version: link:../../packages/schemas
+      '@adlc/testing':
+        specifier: workspace:*
+        version: link:../../packages/testing
+      '@nestjs/common':
+        specifier: 11.1.6
+        version: 11.1.6(reflect-metadata@0.2.2)(rxjs@7.8.2)
+      '@nestjs/core':
+        specifier: 11.1.6
+        version: 11.1.6(@nestjs/common@11.1.6(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/platform-express@11.1.6)(reflect-metadata@0.2.2)(rxjs@7.8.2)
+      '@nestjs/platform-express':
+        specifier: 11.1.6
+        version: 11.1.6(@nestjs/common@11.1.6(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.6)
+      '@types/dockerode':
+        specifier: 3.3.42
+        version: 3.3.42
+      dockerode:
+        specifier: 4.0.7
+        version: 4.0.7
+      esbuild:
+        specifier: 0.25.12
+        version: 0.25.12
+      reflect-metadata:
+        specifier: 0.2.2
+        version: 0.2.2
+
   apps/gateway:
     dependencies:
       '@adlc/adapters':
         specifier: workspace:*
         version: link:../../packages/adapters
+      '@adlc/control-plane':
+        specifier: workspace:*
+        version: link:../../packages/control-plane
       '@adlc/db':
         specifier: workspace:*
         version: link:../../packages/db
@@ -108,6 +172,9 @@ importers:
       '@adlc/domain':
         specifier: workspace:*
         version: link:../../packages/domain
+      '@adlc/executor':
+        specifier: workspace:*
+        version: link:../../packages/executor
       '@adlc/telemetry':
         specifier: workspace:*
         version: link:../../packages/telemetry
@@ -279,6 +346,9 @@ importers:
       '@adlc/adapters':
         specifier: workspace:*
         version: link:../adapters
+      '@adlc/executor':
+        specifier: workspace:*
+        version: link:../executor
       '@testcontainers/postgresql':
         specifier: 11.7.1
         version: 11.7.1

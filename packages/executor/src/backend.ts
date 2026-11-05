@@ -1,4 +1,7 @@
 /**
+ * The container contract, importable without any Docker code as `@adlc/executor/contract`
+ * (the agent runtime uses it; the agent image must not contain a Docker client).
+ *
  * ExecutorBackend (spec.md §7, C2): creates, runs and destroys one container per agent run
  * (hard rule 6). The pilot uses Docker (rootless); a Kubernetes backend can implement the same
  * interface later (SDD §17.4).
@@ -53,3 +56,14 @@ export interface ExecutorBackend {
   /** Removes the container and its anonymous volumes. Idempotent. */
   delete(h: RunHandle): Promise<void>;
 }
+
+/**
+ * Exit codes of the agent runtime (the contract between the container and the supervisor).
+ * Anything other than these is a failure.
+ */
+export const RUN_EXIT_CODES = {
+  succeeded: 0,
+  failed: 1,
+  /** The run obeyed a stop-after-step directive (kill switch, budget) after pushing its WIP. */
+  stoppedByDirective: 3,
+} as const;

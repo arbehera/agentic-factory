@@ -1,0 +1,42 @@
+{
+  "name": "@adlc/agent-runtime",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "build:bundle": "node scripts/bundle.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage"
+  },
+  "dependencies": {
+    "@adlc/executor": "workspace:*",
+    "@adlc/telemetry": "workspace:*",
+    "@modelcontextprotocol/sdk": "1.17.5",
+    "zod": "4.1.12"
+  },
+  "devDependencies": {
+    "@adlc/adapters": "workspace:*",
+    "@adlc/control-plane": "workspace:*",
+    "@adlc/db": "workspace:*",
+    "@adlc/domain": "workspace:*",
+    "@adlc/gateway": "workspace:*",
+    "@adlc/mcp-servers": "workspace:*",
+    "@adlc/schemas": "workspace:*",
+    "@adlc/testing": "workspace:*",
+    "@nestjs/common": "11.1.6",
+    "@nestjs/core": "11.1.6",
+    "@nestjs/platform-express": "11.1.6",
+    "@types/dockerode": "3.3.42",
+    "dockerode": "4.0.7",
+    "esbuild": "0.25.12",
+    "reflect-metadata": "0.2.2"
+  }
+}

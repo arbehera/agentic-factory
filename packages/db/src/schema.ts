@@ -411,3 +411,28 @@ export const gatewaySession = pgTable(
     check("gateway_session_fence_chk", sql`(${t.taskKey} is null) = (${t.fencingToken} is null)`),
   ],
 );
+
+/**
+ * PostgreSQL job queue (hard rule 8: no broker). Workers claim with FOR UPDATE SKIP LOCKED and
+ * hold a time-limited lock; a crashed worker's job becomes claimable again when the lock lapses.
+ */
+export const job = pgTable(
+  "job",
+  {
+    id: bigserial("id", { mode: "number" }).primaryKey(),
+    kind: text("kind").notNull(),
+    payload: jsonb("payload").$type<Record<string, unknown>>().notNull(),
+    /** Enqueue is idempotent per key (e.g. `start-run:<runId>`). */
+    dedupeKey: text("dedupe_key").unique(),
+    runAfter: ts("run_after").notNull(),
+    attempts: integer("attempts").notNull().default(0),
+    maxAttempts: integer("max_attempts").notNull().default(3),
+    lockedBy: text("locked_by"),
+    lockedUntil: ts("locked_until"),
+    lastError: text("last_error"),
+    doneAt: ts("done_at"),
+    failedAt: ts("failed_at"),
+    createdAt: createdAt(),
+  },
+  (t) => [index("job_ready_idx").on(t.runAfter).where(sql`${t.doneAt} is null and ${t.failedAt} is null`)],
+);

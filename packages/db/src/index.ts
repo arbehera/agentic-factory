@@ -1,4 +1,5 @@
 export * from "./advisory-locks.js";
+export * from "./agent-definition-repository.js";
 export * from "./agent-run-repository.js";
 export * from "./audit-repository.js";
 export * from "./audit-table.js";
@@ -7,6 +8,7 @@ export * from "./client.js";
 export * from "./control-flag-repository.js";
 export * from "./decision-repository.js";
 export * from "./gateway-session-repository.js";
+export * from "./job-queue.js";
 export * from "./lease-repository.js";
 export * from "./pack-version-repository.js";
 export * from "./project-repository.js";

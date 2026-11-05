@@ -7,6 +7,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./contract": {
+      "types": "./dist/backend.d.ts",
+      "default": "./dist/backend.js"
     }
   },
   "scripts": {
