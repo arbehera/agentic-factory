@@ -141,7 +141,7 @@ Store only what Jira and Git must not hold [SDD §4.2 P3]. **Never store a copy 
 | `Lease` | taskKey, runId, fencingToken, expiresAt (TTL 15 min, renewed every 5 min heartbeat, capped by wall-clock budget) | Fencing token required on every write |
 | `ComponentLock` | projectId, component, state (active / pending-merge), taskKey | [SDD §8.4] |
 | `StepRecord` | runId, step (S0–S12 or command), status, startedAt, endedAt, wipCommitSha, errorSignature | Loop detection uses `errorSignature` |
-| `Decision` | id (DEC-nnnn), class (clarification/consult/escalation/risk/gate), route (operational/design/human), options, owner, timebox, reversible, autoResolve (only for lookup consults), status, outcome, decidedBy, jiraKey | Gate class: `reversible=false`, `autoResolve=false`, `onTimeout=escalate` |
+| `Decision` | id (DEC-nnnn), class (clarification/consult/escalation/risk/requirement/gate; `requirement` added 2026-11-05, plan Q-10), route (operational/design/human), options, owner, timebox, reversible, autoResolve (only for lookup consults), status, outcome, decidedBy, jiraKey | Gate class: `reversible=false`, `autoResolve=false`, `onTimeout=escalate` |
 | `Gate` | id (G0–G6, G-CR, G2Δ/G3Δ/G4Δ), projectId, scope, jiraGateKey, prRef?, readinessReportRef, status, approvedBy, approvedAt | Two-key for G1–G4 |
 | `EvidenceRecord` | prNumber, headSha, mergeGroupSha?, patchId, reviewerVerdicts[{role, tier, verdictHash, modelCallId}], checkResults[], envelopeRef, status | Write-once |
 | `TraceNode` / `TraceLink` | id (STK/SYS/HWR/CSR/SWR/SWC/SWU/test IDs), type, source, status, supersedes; link(from, rel, to) | Rebuilt on merge |

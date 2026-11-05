@@ -29,7 +29,7 @@ describe("FR-DEC-001 Decision input validation", () => {
   });
 
   it("FR-DEC-002 rejects auto-resolve on gate, clarification and risk Decisions", () => {
-    for (const cls of ["gate", "clarification", "risk", "escalation"]) {
+    for (const cls of ["gate", "clarification", "risk", "requirement", "escalation"]) {
       const r = decisionInputSchema.safeParse({ ...decision, class: cls, reversible: false });
       expect(r.success).toBe(false);
       expect(r.error?.issues[0]?.message).toMatch(/only consult|autoResolve=false/);

@@ -15,6 +15,13 @@
       "when": 1793790935834,
       "tag": "0001_audit_event",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793842421457,
+      "tag": "0002_decision_requirement_class",
+      "breakpoints": true
     }
   ]
 }

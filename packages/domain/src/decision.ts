@@ -2,7 +2,7 @@ import { DecisionInvariantError } from "./errors.js";
 import { defineMachine } from "./state-machine.js";
 
 /** Decision classes and routes (spec.md §5, SDD §8.6). */
-export const DECISION_CLASSES = ["clarification", "consult", "escalation", "risk", "gate"] as const;
+export const DECISION_CLASSES = ["clarification", "consult", "escalation", "risk", "requirement", "gate"] as const;
 export type DecisionClass = (typeof DECISION_CLASSES)[number];
 
 export const DECISION_ROUTES = ["operational", "design", "human"] as const;

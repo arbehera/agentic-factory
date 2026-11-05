@@ -175,6 +175,7 @@ describe.skipIf(skip)("P0-WP2 database (PostgreSQL 16)", () => {
       );
       await expect(insert(formatDecisionId(2), "gate", true, false)).rejects.toMatchObject({ cause: { constraint: "decision_gate_chk" } });
       await expect(insert(formatDecisionId(3), "risk", false, true)).rejects.toMatchObject({ cause: { constraint: "decision_auto_resolve_chk" } });
+      await expect(insert(formatDecisionId(5), "requirement", false, true)).rejects.toMatchObject({ cause: { constraint: "decision_auto_resolve_chk" } });
       await expect(insert(formatDecisionId(4), "gate", false, false)).resolves.toBeDefined();
     });
 
