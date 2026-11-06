@@ -88,6 +88,9 @@ services:
       FAKES_URL: http://dev-fakes:4000
       FAKES_TOKEN: ${FAKES_TOKEN:?}
       AGENTS_DIR: /app/agents
+      # Model proxy to the fake Messages API in dev-fakes; the key is a dev placeholder secret.
+      MODEL_UPSTREAM_URL: http://dev-fakes:4001
+      ADLC_SECRET_CLAUDE_API_KEY: ${MODEL_API_KEY:?}
     # The only service on the internal agent network: the agents' whole allow-list (ADR-0011).
     networks: [adlc, agents]
     healthcheck: { <<: *health, test: [CMD, node, -e, "fetch('http://localhost:3001/health').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"] }
@@ -106,6 +109,7 @@ services:
       FAKES_URL: http://dev-fakes:4000
       FAKES_TOKEN: ${FAKES_TOKEN:?}
       DISPATCH_ROLE: dummy
+      REVIEWER_SETS_FILE: /app/agents/reviewer-sets.yaml
       AGENT_IMAGE: ${AGENT_IMAGE:?run pnpm dev:up to build the agent image}
       AGENT_GATEWAY_URL: http://gateway:3001
       AGENT_NETWORK: adlc-agents
@@ -127,6 +131,18 @@ services:
   orchestrator-b:
     <<: *orchestrator
     ports: ["127.0.0.1:3101:3000"]
+
+  # Evidence signer (C8): claims only signing jobs; holds the only signing key (dev: ephemeral).
+  signer:
+    <<: *platform
+    command: [node, apps/signer/dist/main.js]
+    environment:
+      <<: *app-db
+      ADAPTERS: dev-fakes
+      FAKES_URL: http://dev-fakes:4000
+      FAKES_TOKEN: ${FAKES_TOKEN:?}
+      REVIEWER_SETS_FILE: /app/agents/reviewer-sets.yaml
+      SIGNER_ENVIRONMENT: dev
 
   notifier:
     <<: *platform

@@ -26,7 +26,11 @@ export function createDb(pool: pg.Pool): Db {
 export function createPool(connectionString: string, opts: { onIdleError?: (err: Error) => void } = {}): pg.Pool {
   // Bounded connects and TCP keep-alive: a vanished host fails fast instead of hanging (AT-P0-06).
   const pool = new pg.Pool({ connectionString, max: 10, connectionTimeoutMillis: 10_000, keepAlive: true });
-  const report = opts.onIdleError ?? ((err: Error) => process.emitWarning(`idle database connection closed: ${err.message}`));
+  const report =
+    opts.onIdleError ??
+    ((err: Error) => {
+      process.emitWarning(`idle database connection closed: ${err.message}`);
+    });
   pool.on("error", report);
   return pool;
 }

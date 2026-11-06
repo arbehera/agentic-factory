@@ -14,10 +14,22 @@ import {
 import { GATEWAY_TOKEN_ENV, RUN_EXIT_CODES, type ExecutorBackend, type RunHandle, type RunLimits } from "@adlc/executor";
 import type { Clock } from "@adlc/control-plane";
 import type { Logger } from "@adlc/telemetry";
+import { z } from "zod";
 import { ORCHESTRATOR_ACTOR, retireRun } from "./runs.js";
 import { JiraTaskStatus } from "./task-status.js";
 
 export const START_RUN_JOB = "start-run";
+/** A review run's gateway session lifetime: enough for one review, then it lapses on its own. */
+export const REVIEW_SESSION_MS = 30 * 60_000;
+
+const startReviewPayloadSchema = z.object({
+  projectId: z.uuid(),
+  taskKey: z.string().regex(/^[A-Z][A-Z0-9]*-\d+$/),
+  repo: z.string().regex(/^[\w.-]+\/[\w.-]+$/),
+  prNumber: z.number().int().positive(),
+  headSha: z.string().regex(/^[0-9a-f]{40}$/),
+  role: z.string().regex(/^[a-z][a-z0-9-]*$/),
+});
 
 export interface LaunchConfig {
   /** Digest-pinned agent image (one runtime image for every role in Phase 0). */
@@ -83,46 +95,91 @@ export class RunLauncher {
         return "stale";
       }
     }
-    const log = this.logger.child({ projectId: run.projectId, runId, taskKey: run.taskKey });
     const [definition, project] = await Promise.all([this.definitions.get(run.agentDefinitionId), this.projects.get(run.projectId)]);
     const token = await this.sessions.issue(
       { runId, role: definition.role, projectId: run.projectId, taskKey: run.taskKey, fencingToken: lease.fencingToken, expiresAt: lease.deadlineAt },
       now,
     );
+    const taskKey = run.taskKey;
+    return this.startContainer({ runId, projectId: run.projectId, taskKey, role: definition.role, modelId: definition.modelId, repo: project.repos[0] ?? "", token }, {}, () =>
+      this.leases.release({ taskKey, fencingToken: lease.fencingToken }, "container failed to start", this.clock.now()).then(() => undefined),
+    );
+  }
 
+  /**
+   * Starts a review run (minimal trigger, ReviewFlow). It holds no task lease, because the author's
+   * run did the work. Its gateway session may record a verdict only on this PR head (FR-EVD-002), and
+   * it expires on its own.
+   */
+  async launchReview(payload: unknown): Promise<LaunchOutcome> {
+    const p = startReviewPayloadSchema.parse(payload);
+    const now = this.clock.now();
+    const definition = await this.definitions.latestForRole(p.role);
+    if (!definition) {
+      this.logger.error({ role: p.role, taskKey: p.taskKey }, "no agent definition registered for the reviewer role");
+      return "skipped";
+    }
+    const run = await this.runs.create({ agentDefinitionId: definition.id, projectId: p.projectId, kind: "review", taskKey: p.taskKey }, ORCHESTRATOR_ACTOR, now);
+    const token = await this.sessions.issue(
+      {
+        runId: run.id,
+        role: definition.role,
+        projectId: p.projectId,
+        taskKey: null,
+        fencingToken: null,
+        expiresAt: new Date(now.getTime() + REVIEW_SESSION_MS),
+        reviewTarget: { repo: p.repo, prNumber: p.prNumber, headSha: p.headSha },
+      },
+      now,
+    );
+    return this.startContainer(
+      { runId: run.id, projectId: p.projectId, taskKey: p.taskKey, role: definition.role, modelId: definition.modelId, repo: p.repo, token },
+      { ADLC_PR_NUMBER: String(p.prNumber), ADLC_HEAD_SHA: p.headSha },
+      () => Promise.resolve(),
+    );
+  }
+
+  /** Creates and starts the hardened container; on any failure cleans up and ends the run. */
+  private async startContainer(
+    r: { runId: string; projectId: string; taskKey: string; role: string; modelId: string; repo: string; token: string },
+    extraEnv: Record<string, string>,
+    releaseLease: () => Promise<void>,
+  ): Promise<LaunchOutcome> {
+    const log = this.logger.child({ projectId: r.projectId, runId: r.runId, taskKey: r.taskKey });
     let handle: RunHandle | null = null;
     try {
       handle = await this.executor.create({
-        runId,
+        runId: r.runId,
         image: this.config.image,
         network: this.config.network,
         limits: this.config.limits,
         env: {
           ADLC_GATEWAY_URL: this.config.gatewayUrl,
-          [GATEWAY_TOKEN_ENV]: token,
-          ADLC_RUN_ID: runId,
-          ADLC_TASK_KEY: run.taskKey,
-          ADLC_ROLE: definition.role,
-          ADLC_REPO: project.repos[0] ?? "",
-          ADLC_MODEL: definition.modelId,
+          [GATEWAY_TOKEN_ENV]: r.token,
+          ADLC_RUN_ID: r.runId,
+          ADLC_TASK_KEY: r.taskKey,
+          ADLC_ROLE: r.role,
+          ADLC_REPO: r.repo,
+          ADLC_MODEL: r.modelId,
           ...(this.config.tuning?.heartbeatMs === undefined ? {} : { ADLC_HEARTBEAT_MS: String(this.config.tuning.heartbeatMs) }),
           ...(this.config.tuning?.dummyWorkMs === undefined ? {} : { ADLC_DUMMY_WORK_MS: String(this.config.tuning.dummyWorkMs) }),
+          ...extraEnv,
         },
       });
-      await this.runs.transition(runId, "starting", ORCHESTRATOR_ACTOR, "container created", now, { containerId: handle.containerId });
+      await this.runs.transition(r.runId, "starting", ORCHESTRATOR_ACTOR, "container created", this.clock.now(), { containerId: handle.containerId });
       await this.executor.start(handle);
-      await this.runs.transition(runId, "running", ORCHESTRATOR_ACTOR, "container started", this.clock.now());
+      await this.runs.transition(r.runId, "running", ORCHESTRATOR_ACTOR, "container started", this.clock.now());
       log.info({ containerId: handle.containerId }, "agent container started");
       return "launched";
     } catch (err) {
       log.error({ err: (err as Error).message }, "agent container failed to start");
       if (handle) await this.executor.delete(handle).catch(() => undefined);
-      await this.sessions.revokeRun(runId, this.clock.now());
-      await this.leases.release({ taskKey: run.taskKey, fencingToken: lease.fencingToken }, "container failed to start", this.clock.now()).catch(() => undefined);
-      const current = (await this.runs.get(runId))?.state as AgentRunState | undefined;
+      await this.sessions.revokeRun(r.runId, this.clock.now());
+      await releaseLease().catch(() => undefined);
+      const current = (await this.runs.get(r.runId))?.state as AgentRunState | undefined;
       const to: AgentRunState = current && agentRunMachine.canTransition(current, "failed") ? "failed" : "stopped";
       if (current && agentRunMachine.canTransition(current, to)) {
-        await this.runs.transition(runId, to, ORCHESTRATOR_ACTOR, `container failed to start: ${(err as Error).name}`, this.clock.now());
+        await this.runs.transition(r.runId, to, ORCHESTRATOR_ACTOR, `container failed to start: ${(err as Error).name}`, this.clock.now());
       }
       return "failed";
     }
@@ -197,7 +254,7 @@ export class Supervisor {
       }
       if (to === "succeeded" || to === "stopped") await this.executor.delete(handle);
       else await this.escalateToHuman(run, to, reason, now);
-      if (to === "succeeded") await this.handOverForReview(run);
+      if (to === "succeeded" && run.kind === "task-pipeline") await this.handOverForReview(run);
       ended.push({ runId: run.id, state: to, reason });
     }
     return ended;

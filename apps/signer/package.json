@@ -13,18 +13,24 @@
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "start": "node dist/main.js"
   },
   "dependencies": {
     "@adlc/adapters": "workspace:*",
     "@adlc/attestation": "workspace:*",
+    "@adlc/control-plane": "workspace:*",
     "@adlc/db": "workspace:*",
     "@adlc/domain": "workspace:*",
+    "@adlc/pack-sdk": "workspace:*",
     "@adlc/schemas": "workspace:*",
-    "@adlc/telemetry": "workspace:*"
+    "@adlc/telemetry": "workspace:*",
+    "pg": "8.16.3",
+    "zod": "4.1.12"
   },
   "devDependencies": {
     "@adlc/testing": "workspace:*",
-    "@types/node": "22.18.12"
+    "@types/node": "22.18.12",
+    "@types/pg": "8.15.5"
   }
 }

@@ -75,6 +75,27 @@ describe("P0-WP11 dev-fakes: one fake Jira and GitHub shared by every service", 
     expect(state.result.statuses.map((s) => s.status.context)).toEqual(["adlc/verify"]);
   });
 
+  it("AT-P0-01 a human merge goes through only with adlc/verify and adlc/evidence green on the head", async () => {
+    await admin("seedRepo", ["org/merge", { "README.md": "hi" }]);
+    const { sha } = await scm.createBranch("org/merge", "task/PILOT-2", "main");
+    const c = await scm.commit("org/merge", "task/PILOT-2", { files: [{ path: "x.md", content: "x" }], message: "m", parentSha: sha });
+    const pr = await scm.openPullRequest("org/merge", { head: "task/PILOT-2", base: "main", title: "t", body: "b" });
+    expect(await scm.findPullRequest("org/merge", "task/PILOT-2")).toMatchObject({ number: pr.number, merged: false });
+    expect(await scm.findPullRequest("org/merge", "task/none")).toBeNull();
+
+    await scm.setCommitStatus("org/merge", c.sha, { context: "adlc/verify", state: "success", description: "ok" });
+    const refused = await admin("mergeAsHuman", ["org/merge", pr.number]);
+    expect(refused.status).toBe(409);
+    expect(JSON.stringify(refused.body)).toContain("adlc/evidence");
+
+    await scm.setCommitStatus("org/merge", c.sha, { context: "adlc/evidence", state: "success", description: "signed" });
+    expect((await admin("mergeAsHuman", ["org/merge", pr.number])).body.result).toBe(c.sha);
+    expect(await scm.getPullRequest("org/merge", pr.number)).toMatchObject({ merged: true });
+    expect(await scm.getBranch("org/merge", "main")).toBe(c.sha);
+    expect((await admin("mergeAsHuman", ["org/merge", pr.number])).status).toBe(409); // already merged
+    expect((await admin("mergeAsHuman", ["org/merge", 99])).status).toBe(409);
+  });
+
   it("serves only port methods and admin operations, and only with the token", async () => {
     const res = await fetch(`${base}/github/mergePullRequest`, { method: "POST", headers: { authorization: `Bearer ${TOKEN}` }, body: "{}" });
     expect(res.status).toBe(400); // no merge on the port, so none over HTTP (hard rule 3)

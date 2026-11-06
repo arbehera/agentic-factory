@@ -18,6 +18,8 @@ export class FakeSourceControl implements SourceControl {
   readonly prComments: { repo: string; number: number; body: string }[] = [];
   readonly statuses = new Map<string, CheckStatus[]>();
   private readonly commits = new Map<string, Commit>();
+  /** PR keys (`repo#number`) merged by mergeAsHuman. */
+  private readonly merged = new Set<string>();
   private readonly branches = new Map<string, string>();
 
   /** Creates `repo` with a `main` branch holding `files`. */
@@ -83,8 +85,35 @@ export class FakeSourceControl implements SourceControl {
   getPullRequest(repo: string, prNumber: number): Promise<PullRequest | null> {
     this.calls.push(`getPullRequest ${repo} ${prNumber}`);
     const pr = this.pullRequests.find((p) => p.repo === repo && p.number === prNumber);
-    if (!pr) return Promise.resolve(null);
-    return Promise.resolve({ number: pr.number, head: pr.head, base: pr.base, headSha: this.branches.get(`${repo}:${pr.head}`) ?? "" });
+    return Promise.resolve(pr ? this.view(pr) : null);
+  }
+
+  findPullRequest(repo: string, head: string): Promise<PullRequest | null> {
+    this.calls.push(`findPullRequest ${repo} ${head}`);
+    const pr = this.pullRequests.filter((p) => p.repo === repo && p.head === head).at(-1);
+    return Promise.resolve(pr ? this.view(pr) : null);
+  }
+
+  /**
+   * Test control: a human approves the PR and the merge queue merges it, as GitHub would only
+   * with every required status green on the head (FR-GH-001 branch protection). The base branch
+   * moves to the head commit. Rulesets and approval rules themselves are proven in the sandbox.
+   */
+  mergeAsHuman(repo: string, prNumber: number, requiredContexts: readonly string[]): string {
+    const pr = this.pullRequests.find((p) => p.repo === repo && p.number === prNumber);
+    if (!pr) throw new Error(`no PR ${prNumber}`);
+    if (this.merged.has(`${repo}#${prNumber}`)) throw new Error(`PR ${prNumber} is already merged`);
+    const headSha = this.branches.get(`${repo}:${pr.head}`) ?? "";
+    const statuses = this.statuses.get(headSha) ?? [];
+    const missing = requiredContexts.filter((c) => !statuses.some((s) => s.context === c && s.state === "success"));
+    if (missing.length > 0) throw new Error(`required statuses not green on ${headSha}: ${missing.join(", ")}`);
+    this.branches.set(`${repo}:${pr.base}`, headSha);
+    this.merged.add(`${repo}#${prNumber}`);
+    return headSha;
+  }
+
+  private view(pr: { repo: string; number: number; head: string; base: string }): PullRequest {
+    return { number: pr.number, head: pr.head, base: pr.base, headSha: this.branches.get(`${pr.repo}:${pr.head}`) ?? "", merged: this.merged.has(`${pr.repo}#${pr.number}`) };
   }
 
   /** Status history per commit; the latest status per context wins, as on GitHub. */

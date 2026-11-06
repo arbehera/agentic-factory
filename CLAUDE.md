@@ -43,10 +43,13 @@ pnpm --filter @adlc/schemas gen:json-schema   # regenerate packages/schemas/json
 pnpm --filter @adlc/agent-runtime build:bundle   # bundle the agent runtime for its image (refuses a bundled Docker client)
 ADLC_REQUIRE_ROOTLESS_DOCKER=1 pnpm test   # Linux runner/CI: Docker suites must run, not skip (runbook: docs/runbooks/wsl2-rootless-docker.md)
 pnpm --filter @adlc/portal-web dev   # portal web on Vite; proxies /api to PORTAL_API_URL (default http://localhost:3002)
-pnpm db:migrate            # drizzle migrations
-pnpm dev:up                # docker compose (infra/compose) with fakes
-pnpm test:e2e              # requires dev:up
-pnpm test:load             # k6 scenarios in test/load
+pnpm db:migrate            # drizzle migrations (APP_DB_ROLE=adlc_app also applies the application role's grants)
+pnpm dev:up                # Compose stack with fakes, in the WSL distro (docs/runbooks/compose-dev-stack.md); EXECUTOR_SLOTS=20 for the load test
+pnpm dev:down              # stop the stack; `pnpm dev:down --volumes` also deletes its data
+pnpm test:e2e              # AT-P0-01 with fakes + Playwright portal checks/screenshots (requires dev:up)
+pnpm test:load             # AT-P0-05: k6, 20 concurrent dummy runs (requires dev:up)
+pnpm test:failover         # AT-P0-06 drill: primary + leader lost, replica promoted (destructive; requires dev:up)
+scripts/dev/pin-images.sh  # re-pin the stack's third-party images by digest (infra/compose/images.env)
 ```
 
 Keep these scripts working. If you add a script, document it here in the same PR.

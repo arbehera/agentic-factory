@@ -33,7 +33,21 @@ P0-WP11 runs the platform as separate processes for the first time (Compose, fai
    - The portal tries each replica in turn, validates every NDJSON line, and ends a stream cleanly if the source fails mid-way.
 6. **Executor host.** In Compose the orchestrator containers get the rootless Docker socket so they can start agent containers. Agent containers never get it (hard rule 6, ADR-0011). Kubernetes replaces this post-pilot (NFR-004).
 
+7. **Minimal review flow (AT-P0-01; full review dispatch is P3-WP2).** A leader job checks each task In Review or Awaiting Approval against its PR (`task/<key>`), deterministically:
+   - **CI green:** with `adlc/verify` green on the head, it requests one review run per required reviewer role (`agents/reviewer-sets.yaml`). The job is keyed by the head, so each head is reviewed once and a push triggers a new review.
+   - **The review run:** it holds no task lease. Its gateway session may record a verdict only on that head, and it never moves the task.
+   - **Signing:** once every verdict is in, it asks for a signature, once per head.
+   - **Signed:** with `adlc/evidence` green, the task moves In Review → Awaiting Approval.
+   - **Merged:** once the merge queue has merged the PR, Awaiting Approval → Done. Done is reserved for `adlc-orchestrator` and enforced by `assertTaskTransition`.
+   - **Nothing approves or merges.** Without the human merge a task stays Awaiting Approval indefinitely (hard rules 2 and 3).
+8. **Signing through the queue.** The orchestrator enqueues `sign-evidence` jobs. The signer (`apps/signer`) is a separate worker that claims only those jobs and holds the only key. It re-checks all four FR-EVD-002 conditions itself, so a request is never a decision. The queue stays in PostgreSQL (hard rule 8), and `Worker` moved to `@adlc/control-plane` so both services use it.
+9. **Observing merges.** `SourceControl` gains two read-only operations, `findPullRequest(repo, head)` and `PullRequest.merged`, and still has no operation that merges. In the fake, `mergeAsHuman` is a test control that stands in for the human approval and the merge queue. It merges only with the required statuses green on the head.
+10. **End-to-end with fakes.** `pnpm test:e2e` plays CI and the human. Playwright runs in the pinned image inside Keycloak's network namespace, so `localhost:8080` (the token issuer) is Keycloak and the portal is `portal-web:8080`. It signs in through the real login page and saves screenshots. The sandbox half of AT-P0-01 waits for Q-04.
+
 ## Consequences
 - **Now runnable:** every service has an entrypoint and validated configuration; the composition roots are tested.
 - **Socket risk:** the orchestrator container is as powerful as the rootless Docker user. This is accepted for the pilot and limited by rootless mode, and recorded as a risk in the phase report.
+- **Found by running the stack:**
+  - Services crashed when PostgreSQL closed idle connections; the pool now reports the error and reconnects.
+  - The first ready source starved tasks behind in-flight ones, because leased tasks filled its fixed search window. The window is now `limit` plus the runs holding a slot.
 - **Fakes vs reality:** the fakes do not model Jira workflow permissions or GitHub rulesets. Those are proven in the sandbox (AT-P0-04, Q-04).

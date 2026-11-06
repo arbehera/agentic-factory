@@ -33,6 +33,9 @@ export const orchestratorConfigSchema = z.object({
   FAKES_TOKEN: z.string().min(16).optional(),
   /** Role the Phase 0 ready source offers tasks to; without it nothing is dispatched. */
   DISPATCH_ROLE: z.string().regex(/^[a-z][a-z0-9-]*$/).optional(),
+  /** Required reviewer roles per author role (agents/reviewer-sets.yaml); enables the review flow. */
+  REVIEWER_SETS_FILE: z.string().min(1).optional(),
+  REVIEW_FLOW_INTERVAL_MS: z.coerce.number().int().positive().default(5_000),
   /** Bearer token for the internal routes (live logs for the portal API). Unset: routes off. */
   INTERNAL_API_TOKEN: z.string().min(32).optional(),
 });

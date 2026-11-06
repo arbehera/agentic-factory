@@ -1,5 +1,5 @@
 import { createLogger } from "@adlc/telemetry";
-import { createFakesServer } from "@adlc/testing/fakes";
+import { createFakesServer, FakeClaudeApi } from "@adlc/testing/fakes";
 import { z } from "zod";
 
 /**
@@ -9,6 +9,8 @@ import { z } from "zod";
 const env = z
   .object({
     PORT: z.coerce.number().int().min(0).max(65535).default(4000),
+    /** Fake Claude Messages API for the gateway's model proxy (dummy reviewer, P0-WP7). */
+    MODEL_PORT: z.coerce.number().int().min(0).max(65535).default(4001),
     FAKES_TOKEN: z.string().min(16),
     /** Repositories created on start with a README on main, comma-separated. */
     SEED_REPOS: z.string().default(""),
@@ -24,4 +26,10 @@ for (const repo of env.SEED_REPOS.split(",").map((r) => r.trim()).filter(Boolean
 server.listen(env.PORT, () => {
   logger.info({ port: env.PORT }, "dev-fakes listening (fake Jira and GitHub, in memory)");
 });
-process.on("SIGTERM", () => server.close());
+const model = new FakeClaudeApi();
+await model.start({ port: env.MODEL_PORT, host: "0.0.0.0" });
+logger.info({ port: env.MODEL_PORT }, "fake model API listening (POST /v1/messages)");
+process.on("SIGTERM", () => {
+  server.close();
+  void model.stop();
+});

@@ -18,7 +18,8 @@ export class FakeClaudeApi {
   private server: Server | null = null;
   private seq = 0;
 
-  async start(): Promise<string> {
+  /** Listens on 127.0.0.1 and a free port by default; the dev-fakes service binds all interfaces. */
+  async start(opts: { port?: number; host?: string } = {}): Promise<string> {
     this.server = createServer((req, res) => {
       let raw = "";
       req.on("data", (c: Buffer) => (raw += c.toString("utf8")));
@@ -51,9 +52,9 @@ export class FakeClaudeApi {
     });
     const server = this.server;
     await new Promise<void>((resolve) => {
-      server.listen(0, "127.0.0.1", resolve);
+      server.listen(opts.port ?? 0, opts.host ?? "127.0.0.1", resolve);
     });
-    return `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+    return `http://${opts.host === "0.0.0.0" || opts.host === undefined ? "127.0.0.1" : opts.host}:${(server.address() as AddressInfo).port}`;
   }
 
   async stop(): Promise<void> {

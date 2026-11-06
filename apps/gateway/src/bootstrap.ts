@@ -27,7 +27,9 @@ export async function buildGateway(
   const policies = await loadRolePolicies(config.AGENTS_DIR);
   const adapters = createAdapters(config, deps.fetchImpl);
   const secrets = deps.secrets ?? new EnvSecretProvider(deps.env ?? {});
-  const pool = createPool(config.DATABASE_URL, { onIdleError: (err) => deps.logger.warn({ err: err.message }, "idle database connection closed") });
+  const pool = createPool(config.DATABASE_URL, { onIdleError: (err) => {
+    deps.logger.warn({ err: err.message }, "idle database connection closed");
+  } });
   const db = createDb(pool);
   const heartbeats = new HeartbeatService(new LeaseRepository(db), new KillSwitch(new ControlFlagRepository(db), deps.clock), deps.clock);
   const gateway = new Gateway({ db, tools: allTools, policies, adapters: { jira: adapters.issues, github: adapters.scm }, secrets, heartbeats, clock: deps.clock, logger: deps.logger });

@@ -28,6 +28,8 @@ export interface PullRequest {
   head: string;
   base: string;
   headSha: string;
+  /** Merged by the merge queue after human approval; agents and the platform never merge. */
+  merged: boolean;
 }
 
 export interface CommitStatusInput {
@@ -48,6 +50,8 @@ export interface SourceControl {
   commentOnPullRequest(repo: string, prNumber: number, body: string): Promise<void>;
   checkStatuses(repo: string, sha: string): Promise<CheckStatus[]>;
   getPullRequest(repo: string, prNumber: number): Promise<PullRequest | null>;
+  /** The most recent pull request from `head` (open or merged), or null. Read-only. */
+  findPullRequest(repo: string, head: string): Promise<PullRequest | null>;
   /**
    * Posts a commit status (e.g. adlc/verify, adlc/evidence). Used by CI and the signer under their
    * own identities; no agent tool exposes it. Re-posting the same status is safe.

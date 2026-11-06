@@ -31,11 +31,12 @@ describe("P0-WP11 dev-fakes clients", () => {
     await scm.commentOnPullRequest("r", 1, "c");
     await scm.checkStatuses("r", "x");
     await scm.getPullRequest("r", 1);
+    await scm.findPullRequest("r", "task/K-1");
     await scm.setCommitStatus("r", "x", { context: "adlc/verify", state: "success", description: "d" });
     expect(s.seen.map((c) => c.url.replace("http://fakes:4000/", ""))).toEqual([
       "jira/getIssue", "jira/search", "jira/createIssue", "jira/addComment", "jira/transition", "jira/link",
       "github/getFile", "github/getBranch", "github/createBranch", "github/commit", "github/openPullRequest",
-      "github/commentOnPullRequest", "github/checkStatuses", "github/getPullRequest", "github/setCommitStatus",
+      "github/commentOnPullRequest", "github/checkStatuses", "github/getPullRequest", "github/findPullRequest", "github/setCommitStatus",
     ]);
     expect(JSON.parse(typeof s.seen[4]?.init?.body === "string" ? s.seen[4].init.body : "null")).toEqual({ args: ["K-1", "Done", "3"] });
     expect(new Headers(s.seen[0]?.init?.headers).get("authorization")).toBe("Bearer t0k3n");

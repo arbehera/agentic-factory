@@ -17,9 +17,9 @@ import { FakeSourceControl } from "./fake-source-control.js";
  */
 
 const JIRA_METHODS = ["getIssue", "search", "createIssue", "addComment", "transition", "link"] as const;
-const GITHUB_METHODS = ["getFile", "getBranch", "createBranch", "commit", "openPullRequest", "commentOnPullRequest", "checkStatuses", "getPullRequest", "setCommitStatus"] as const;
+const GITHUB_METHODS = ["getFile", "getBranch", "createBranch", "commit", "openPullRequest", "commentOnPullRequest", "checkStatuses", "getPullRequest", "findPullRequest", "setCommitStatus"] as const;
 
-const ERROR_STATUS: Record<string, number> = { IssueNotFoundError: 404, IssueConflictError: 409, BranchMovedError: 409, BadRequest: 400 };
+const ERROR_STATUS: Record<string, number> = { IssueNotFoundError: 404, IssueConflictError: 409, BranchMovedError: 409, BadRequest: 400, Error: 409 };
 
 class BadRequest extends Error {
   override name = "BadRequest";
@@ -45,6 +45,8 @@ export function createFakesServer(options: { token: string; issues?: FakeIssueTr
     },
     seedRepo: ([repo, files]) => scm.seedRepo(String(repo), files as Record<string, string>),
     pushAsHuman: ([repo, branch, files]) => scm.pushAsHuman(String(repo), String(branch), files as Record<string, string>),
+    // A human approves and the merge queue merges (only with the required statuses green).
+    mergeAsHuman: ([repo, pr, required]) => scm.mergeAsHuman(String(repo), Number(pr), (required as string[] | undefined) ?? ["adlc/verify", "adlc/evidence"]),
   };
 
   const state = (): FakesState => ({ issues: [...issues.issues.values()], comments: issues.comments, pullRequests: scm.pullRequests, statuses: scm.postedStatuses });

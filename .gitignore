@@ -10,3 +10,5 @@ dist-bundle/
 
 # k6 results (P0-WP11)
 test/load/results/
+# Playwright results and screenshots (P0-WP11)
+test/e2e/results/

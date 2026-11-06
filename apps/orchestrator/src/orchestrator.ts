@@ -7,24 +7,27 @@ import {
   ControlFlagRepository,
   JobQueue,
   createDb,
+  EvidenceRepository,
   createPool,
   LeaseRepository,
   ProjectRepository,
   type Db,
 } from "@adlc/db";
-import type { IssueTracker } from "@adlc/adapters";
+import type { IssueTracker, SourceControl } from "@adlc/adapters";
+import type { ReviewerSets } from "@adlc/schemas";
 import type { ExecutorBackend, LogLine } from "@adlc/executor";
 import type { Logger } from "@adlc/telemetry";
 import type pg from "pg";
-import { BudgetService, HeartbeatService, KillSwitch, type Clock } from "@adlc/control-plane";
+import { BudgetService, HeartbeatService, KillSwitch, Worker, type Clock } from "@adlc/control-plane";
 import { ConfigError, type OrchestratorConfig } from "./config.js";
 import { Dispatcher, type CandidateSource } from "./dispatcher.js";
 import { LeaderElector } from "./leader-elector.js";
 import { Reaper } from "./reaper.js";
 import { RunLauncher, START_RUN_JOB, Supervisor } from "./launcher.js";
 import { JiraReadySource } from "./ready-source.js";
+import { ReviewFlow, START_REVIEW_JOB } from "./review-flow.js";
+import { JiraTaskStatus } from "./task-status.js";
 import { OrchestratorRuntime, type LeaderJob } from "./runtime.js";
-import { Worker } from "./worker.js";
 
 /** Until the Jira-backed ready frontier exists (FR-ORC-005, Phase 2) nothing is offered. */
 export const noCandidates: CandidateSource = { candidates: () => Promise.resolve([]) };
@@ -43,6 +46,8 @@ export interface Orchestrator {
   launcher: RunLauncher | null;
   supervisor: Supervisor | null;
   worker: Worker | null;
+  /** Present when adapters, reviewer sets and a dispatch role are configured (AT-P0-01). */
+  reviewFlow: ReviewFlow | null;
   /** Follows a run's container log; null when this replica has no executor or the run no container. */
   runLogs(runId: string): Promise<AsyncIterable<LogLine> | null>;
   /** Starts leader election (and the leader jobs it brings) and this replica's worker. */
@@ -53,9 +58,11 @@ export interface Orchestrator {
 /** Composition root: wires repositories and services. Deterministic — no LLM anywhere (hard rule 1). */
 export function buildOrchestrator(
   config: OrchestratorConfig,
-  deps: { clock: Clock; logger: Logger; candidates?: CandidateSource; executor?: ExecutorBackend; issues?: IssueTracker },
+  deps: { clock: Clock; logger: Logger; candidates?: CandidateSource; executor?: ExecutorBackend; issues?: IssueTracker; scm?: SourceControl; reviewerSets?: ReviewerSets },
 ): Orchestrator {
-  const pool = createPool(config.DATABASE_URL, { onIdleError: (err) => deps.logger.warn({ err: err.message }, "idle database connection closed") });
+  const pool = createPool(config.DATABASE_URL, { onIdleError: (err) => {
+    deps.logger.warn({ err: err.message }, "idle database connection closed");
+  } });
   const db = createDb(pool);
   const leases = new LeaseRepository(db);
   const runs = new AgentRunRepository(db);
@@ -67,13 +74,14 @@ export function buildOrchestrator(
   const candidates =
     deps.candidates ??
     (deps.issues && config.DISPATCH_ROLE
-      ? new JiraReadySource(deps.issues, new ProjectRepository(db), new AgentDefinitionRepository(db), leases, config.DISPATCH_ROLE, deps.clock)
+      ? new JiraReadySource(deps.issues, new ProjectRepository(db), new AgentDefinitionRepository(db), leases, runs, config.DISPATCH_ROLE, deps.clock)
       : noCandidates);
   const dispatcher = new Dispatcher(candidates, leases, runs, budgets, killSwitch, new ProjectRepository(db), slots, queue, deps.clock);
 
   let launcher: RunLauncher | null = null;
   let supervisor: Supervisor | null = null;
   let worker: Worker | null = null;
+  let reviewFlow: ReviewFlow | null = null;
   const executorJobs: LeaderJob[] = [];
   if (deps.executor) {
     if (!config.AGENT_IMAGE || !config.AGENT_GATEWAY_URL) throw new ConfigError("an executor needs AGENT_IMAGE and AGENT_GATEWAY_URL");
@@ -94,12 +102,30 @@ export function buildOrchestrator(
     const sup = new Supervisor(db, deps.executor, deps.clock, deps.logger, deps.issues);
     launcher = launch;
     supervisor = sup;
-    worker = new Worker(queue, { [START_RUN_JOB]: (j) => launch.launch(String(j.payload.runId)) }, deps.clock, deps.logger, {
+    worker = new Worker(queue, { [START_RUN_JOB]: (j) => launch.launch(String(j.payload.runId)), [START_REVIEW_JOB]: (j) => launch.launchReview(j.payload) }, deps.clock, deps.logger, {
       pollMs: config.WORKER_POLL_MS,
       lockMs: 120_000,
       retryMs: 5_000,
     });
     executorJobs.push({ name: "supervise", intervalMs: config.SUPERVISE_INTERVAL_MS, run: () => sup.tick() });
+    if (deps.issues && deps.scm && deps.reviewerSets && config.DISPATCH_ROLE) {
+      const flow = (reviewFlow = new ReviewFlow(
+        deps.issues,
+        deps.scm,
+        new ProjectRepository(db),
+        new EvidenceRepository(db),
+        queue,
+        new JiraTaskStatus(deps.issues, audit),
+        deps.reviewerSets,
+        config.DISPATCH_ROLE,
+        deps.clock,
+        deps.logger,
+      ));
+      executorJobs.push({ name: "review-flow", intervalMs: config.REVIEW_FLOW_INTERVAL_MS, run: async () => {
+          await flow.tick();
+        },
+      });
+    }
   }
   const reaper = new Reaper(leases, runs, deps.clock);
   const elector = new LeaderElector(config.DATABASE_URL, ADVISORY_LOCKS.dispatcherLeader, config.LEADER_POLL_MS, deps.logger);
@@ -141,6 +167,7 @@ export function buildOrchestrator(
     launcher,
     supervisor,
     worker,
+    reviewFlow,
     runLogs: async (runId) => {
       const run = await runs.get(runId);
       if (!deps.executor || !run?.containerId) return null;

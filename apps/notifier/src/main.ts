@@ -23,7 +23,9 @@ const env = z
 const logger = createLogger("notifier", { level: env.LOG_LEVEL });
 const rota = loadYamlContract(rotaSchema, await readFile(env.ROTA_FILE, "utf8"), env.ROTA_FILE);
 const calendar = loadYamlContract(workingCalendarSchema, await readFile(env.CALENDAR_FILE, "utf8"), env.CALENDAR_FILE);
-const pool = createPool(env.DATABASE_URL, { onIdleError: (err) => logger.warn({ err: err.message }, "idle database connection closed") });
+const pool = createPool(env.DATABASE_URL, { onIdleError: (err) => {
+    logger.warn({ err: err.message }, "idle database connection closed");
+  } });
 const email = new SmtpEmailChannel(env.SMTP_URL, env.MAIL_FROM);
 const notifier = new NotifierService(new NotificationRepository(createDb(pool)), email, rota, calendar, env.PORTAL_URL.replace(/\/$/, ""), { now: () => new Date() }, logger);
 

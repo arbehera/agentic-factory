@@ -18,7 +18,7 @@ describe.skipIf(skipIntegration)("P0-WP11 Phase 0 ready source (stand-in for FR-
     jira = new FakeIssueTracker();
     const { rows } = await h.db.pool.query<{ k: string }>("select jira_project_key as k from project where id = $1", [h.seed.projectId]);
     key = rows[0]?.k ?? "";
-    source = new JiraReadySource(jira, new ProjectRepository(h.orch.db), new AgentDefinitionRepository(h.orch.db), new LeaseRepository(h.orch.db), "dummy", h.clock);
+    source = new JiraReadySource(jira, new ProjectRepository(h.orch.db), new AgentDefinitionRepository(h.orch.db), new LeaseRepository(h.orch.db), new AgentRunRepository(h.orch.db), "dummy", h.clock);
   });
   afterEach(async () => {
     await h.close();
@@ -46,9 +46,21 @@ describe.skipIf(skipIntegration)("P0-WP11 Phase 0 ready source (stand-in for FR-
     expect((await source.candidates(10)).map((c) => c.taskKey)).toEqual([`${key}-5`]);
   });
 
+  it("AT-P0-05 leased tasks do not starve the tasks behind them: the search window grows with active runs", async () => {
+    const runs = new AgentRunRepository(h.orch.db);
+    const leases = new LeaseRepository(h.orch.db);
+    for (let i = 1; i <= 12; i++) jira.seed({ key: `${key}-${100 + i}`, type: "Task", status: i <= 8 ? "In Progress" : "To Do", summary: "x", description: "" });
+    for (let i = 1; i <= 8; i++) {
+      const run = await runs.create({ agentDefinitionId: h.seed.agentDefinitionId, projectId: h.seed.projectId, kind: "task-pipeline", taskKey: `${key}-${100 + i}` }, { kind: "service", id: "t" }, h.clock.now());
+      await leases.acquire({ taskKey: `${key}-${100 + i}`, runId: run.id, deadlineAt: new Date(h.clock.now().getTime() + 3_600_000), now: h.clock.now() });
+    }
+    // 8 in flight ahead of 4 waiting tasks; with a window of only `limit` (4) none would be offered.
+    expect((await source.candidates(4)).map((c) => c.taskKey)).toEqual([109, 110, 111, 112].map((n) => `${key}-${n}`));
+  });
+
   it("offers nothing for a role with no registered definition, or for inactive projects", async () => {
     jira.seed({ key: `${key}-6`, type: "Task", status: "To Do", summary: "x", description: "" });
-    const none = new JiraReadySource(jira, new ProjectRepository(h.orch.db), new AgentDefinitionRepository(h.orch.db), new LeaseRepository(h.orch.db), "no-such-role", h.clock);
+    const none = new JiraReadySource(jira, new ProjectRepository(h.orch.db), new AgentDefinitionRepository(h.orch.db), new LeaseRepository(h.orch.db), new AgentRunRepository(h.orch.db), "no-such-role", h.clock);
     expect(await none.candidates(10)).toEqual([]);
     await h.db.pool.query("update project set status = 'paused'");
     expect(await source.candidates(10)).toEqual([]);

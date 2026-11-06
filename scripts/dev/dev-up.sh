@@ -16,22 +16,14 @@ set -a
 . "$compose_dir/images.env"
 set +a
 
-if [ ! -f "$env_file" ]; then
-  echo "dev-up: generating $env_file (random dev secrets)"
-  gen() { openssl rand -hex 24; }
-  (
-    umask 077
-    {
-      echo "POSTGRES_PASSWORD=$(gen)"
-      echo "REPLICATION_PASSWORD=$(gen)"
-      echo "APP_DB_PASSWORD=$(gen)"
-      echo "FAKES_TOKEN=$(gen)"
-      echo "INTERNAL_API_TOKEN=$(gen)"
-      echo "KEYCLOAK_ADMIN_PASSWORD=$(gen)"
-      echo "ADLC_DEV_USER_PASSWORD=$(gen)"
-    } >"$env_file"
-  )
-fi
+# Random dev secrets, created once; keys added in later versions are appended to an existing file.
+(
+  umask 077
+  touch "$env_file"
+  for key in POSTGRES_PASSWORD REPLICATION_PASSWORD APP_DB_PASSWORD FAKES_TOKEN INTERNAL_API_TOKEN KEYCLOAK_ADMIN_PASSWORD ADLC_DEV_USER_PASSWORD MODEL_API_KEY; do
+    grep -q "^$key=" "$env_file" || { echo "$key=$(openssl rand -hex 24)" >>"$env_file"; echo "dev-up: generated $key in $env_file"; }
+  done
+)
 
 echo "dev-up: building the agent runtime image"
 pnpm install --frozen-lockfile >/dev/null

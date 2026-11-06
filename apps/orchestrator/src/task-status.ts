@@ -1,5 +1,5 @@
 import { IssueConflictError, type IssueTracker } from "@adlc/adapters";
-import { stateHash, taskStatusMachine, type TaskStatus } from "@adlc/domain";
+import { assertTaskTransition, stateHash, taskStatusMachine, type TaskStatus } from "@adlc/domain";
 import type { AuditRepository } from "@adlc/db";
 import { ORCHESTRATOR_ACTOR } from "./runs.js";
 
@@ -24,6 +24,7 @@ export class JiraTaskStatus {
   async move(taskKey: string, to: TaskStatus, reason: string, correlation: { projectId: string; runId: string }): Promise<TaskMove> {
     const issue = await this.issues.getIssue(taskKey);
     if (issue.status === to || !taskStatusMachine.canTransition(issue.status as TaskStatus, to)) return { status: issue.status, moved: false };
+    assertTaskTransition(issue.status as TaskStatus, to, ORCHESTRATOR_ACTOR); // Done is reserved for adlc-orchestrator
     let after;
     try {
       after = await this.issues.transition(taskKey, to, issue.version);

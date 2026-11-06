@@ -1,6 +1,6 @@
 import type { IssueTracker } from "@adlc/adapters";
 import { isLeaseLive } from "@adlc/domain";
-import type { AgentDefinitionRepository, LeaseRepository, ProjectRepository } from "@adlc/db";
+import type { AgentDefinitionRepository, AgentRunRepository, LeaseRepository, ProjectRepository } from "@adlc/db";
 import type { Clock } from "@adlc/control-plane";
 import type { CandidateSource, ClaimCandidate } from "./dispatcher.js";
 
@@ -15,6 +15,11 @@ const OFFERED = ["To Do", "In Progress"] as const;
  *
  * Jira is read on every tick, never cached (hard rule 4). JQL narrows the search and the statuses
  * are checked again here, so a search that returns more than asked for cannot widen dispatch.
+ *
+ * Leased tasks still match the query, so the search window is `limit` plus the runs holding a
+ * slot: every leased task belongs to one of them, so the window always reaches `limit` unleased
+ * tasks if there are that many. (Found by the AT-P0-05 load test: a fixed window starved every
+ * task behind the first `limit` in-flight ones.)
  */
 export class JiraReadySource implements CandidateSource {
   constructor(
@@ -22,6 +27,7 @@ export class JiraReadySource implements CandidateSource {
     private readonly projects: ProjectRepository,
     private readonly definitions: AgentDefinitionRepository,
     private readonly leases: LeaseRepository,
+    private readonly runs: AgentRunRepository,
     private readonly role: string,
     private readonly clock: Clock,
   ) {}
@@ -30,9 +36,10 @@ export class JiraReadySource implements CandidateSource {
     const definition = await this.definitions.latestForRole(this.role);
     if (!definition) return [];
     const out: ClaimCandidate[] = [];
+    const window = limit + (await this.runs.countActive()).total;
     for (const project of await this.projects.listActive()) {
       const jql = `project = ${project.jiraProjectKey} AND status in (${OFFERED.map((s) => `"${s}"`).join(", ")}) ORDER BY created ASC`;
-      for (const issue of await this.issues.search(jql, limit)) {
+      for (const issue of await this.issues.search(jql, window)) {
         if (out.length >= limit) return out;
         if (!(OFFERED as readonly string[]).includes(issue.status) || !issue.key.startsWith(`${project.jiraProjectKey}-`)) continue;
         const lease = await this.leases.get(issue.key);

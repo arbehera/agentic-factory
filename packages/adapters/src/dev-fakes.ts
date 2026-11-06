@@ -91,6 +91,9 @@ export class DevFakesSourceControl implements SourceControl {
   getPullRequest(repo: string, prNumber: number): Promise<PullRequest | null> {
     return this.client.call("github/getPullRequest", [repo, prNumber]);
   }
+  findPullRequest(repo: string, head: string): Promise<PullRequest | null> {
+    return this.client.call("github/findPullRequest", [repo, head]);
+  }
   setCommitStatus(repo: string, sha: string, status: CommitStatusInput): Promise<void> {
     return this.client.call("github/setCommitStatus", [repo, sha, status]);
   }

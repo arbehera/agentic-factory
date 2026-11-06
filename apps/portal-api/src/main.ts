@@ -12,7 +12,9 @@ import { PortalService } from "./portal-service.js";
 
 const config = loadPortalConfig(process.env);
 const logger = createLogger("portal-api", { level: config.LOG_LEVEL });
-const pool = createPool(config.DATABASE_URL, { onIdleError: (err) => logger.warn({ err: err.message }, "idle database connection closed") });
+const pool = createPool(config.DATABASE_URL, { onIdleError: (err) => {
+    logger.warn({ err: err.message }, "idle database connection closed");
+  } });
 const logs = config.INTERNAL_API_TOKEN && config.ORCHESTRATOR_URLS.length > 0 ? new OrchestratorLogSource(config.ORCHESTRATOR_URLS, config.INTERNAL_API_TOKEN) : null;
 const auth = new PortalAuth({ issuer: config.OIDC_ISSUER, audience: config.OIDC_AUDIENCE, keys: createRemoteJWKSet(new URL(jwksUrl(config))) });
 const app = await NestFactory.create(PortalModule.forRoot(new PortalService(createDb(pool), logs, systemClock), auth), { logger: false });
