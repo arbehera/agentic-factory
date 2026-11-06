@@ -111,6 +111,15 @@ describe.skipIf(skipIntegration)("P0-WP4 run launch and supervision", () => {
     expect(await runs.get(claim?.runId ?? "")).toMatchObject({ state: "stopped" });
   });
 
+  it("AT-P0-05 optional run tuning reaches the container as fixed ADLC_* variables only", async () => {
+    await h.close();
+    exec = new FakeExecutorBackend();
+    h = await harness({ ...ENV, AGENT_HEARTBEAT_MS: "5000", AGENT_DUMMY_WORK_MS: "60000" }, exec);
+    const claim = await claimAndLaunch("PILOT-6");
+    expect(exec.byRun(claim.runId)?.container.spec.env).toMatchObject({ ADLC_HEARTBEAT_MS: "5000", ADLC_DUMMY_WORK_MS: "60000" });
+    await expect(harness({ ...ENV, AGENT_HEARTBEAT_MS: "10" })).rejects.toThrow(/AGENT_HEARTBEAT_MS/);
+  });
+
   it("an executor without an agent image is a configuration error", async () => {
     await expect(harness({}, new FakeExecutorBackend())).rejects.toThrow(/AGENT_IMAGE/);
   });

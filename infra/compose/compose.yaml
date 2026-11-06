@@ -110,6 +110,9 @@ services:
       AGENT_GATEWAY_URL: http://gateway:3001
       AGENT_NETWORK: adlc-agents
       EXECUTOR_SLOTS: ${EXECUTOR_SLOTS:-8}
+      # Load-test tuning (scripts/dev/load-test.sh); empty = runtime defaults.
+      AGENT_HEARTBEAT_MS: ${AGENT_HEARTBEAT_MS:-}
+      AGENT_DUMMY_WORK_MS: ${AGENT_DUMMY_WORK_MS:-}
       SANDBOX_SLOTS: "2"
       DISPATCH_INTERVAL_MS: "2000"
       SUPERVISE_INTERVAL_MS: "2000"

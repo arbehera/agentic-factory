@@ -21,6 +21,10 @@ export const orchestratorConfigSchema = z.object({
   AGENT_MEMORY_MB: z.coerce.number().int().positive().default(1024),
   AGENT_PIDS: z.coerce.number().int().positive().default(512),
   AGENT_SCRATCH_MB: z.coerce.number().int().positive().default(2048),
+  /** Optional run tuning passed to agent containers; unset = the runtime defaults (5-minute beats). */
+  AGENT_HEARTBEAT_MS: z.preprocess((v) => (v === "" ? undefined : v), z.coerce.number().int().min(1_000).optional()),
+  /** Phase 0 load test (AT-P0-05): how long the dummy agent works before opening its PR. */
+  AGENT_DUMMY_WORK_MS: z.preprocess((v) => (v === "" ? undefined : v), z.coerce.number().int().min(0).max(3_600_000).optional()),
   WORKER_POLL_MS: z.coerce.number().int().positive().default(1_000),
   SUPERVISE_INTERVAL_MS: z.coerce.number().int().positive().default(5_000),
   /** Jira and GitHub adapters (P0-WP11): `dev-fakes` for Compose and e2e; `jira-github` after Q-04. */

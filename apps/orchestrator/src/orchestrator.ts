@@ -85,6 +85,7 @@ export function buildOrchestrator(
         gatewayUrl: config.AGENT_GATEWAY_URL,
         network: config.AGENT_NETWORK,
         limits: { cpus: config.AGENT_CPUS, memoryMb: config.AGENT_MEMORY_MB, pidsLimit: config.AGENT_PIDS, scratchMb: config.AGENT_SCRATCH_MB },
+        tuning: { heartbeatMs: config.AGENT_HEARTBEAT_MS, dummyWorkMs: config.AGENT_DUMMY_WORK_MS },
       },
       deps.clock,
       deps.logger,

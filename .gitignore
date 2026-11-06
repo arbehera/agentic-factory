@@ -7,3 +7,6 @@ coverage/
 .env.*
 !.env.example
 dist-bundle/
+
+# k6 results (P0-WP11)
+test/load/results/

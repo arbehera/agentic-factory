@@ -101,6 +101,22 @@ describe.skipIf(skipIntegration)("P0-WP4 dummy agent through the real gateway", 
     expect((await new AgentRunRepository(db).get(runId))?.heartbeatAt).not.toBeNull();
   });
 
+  it("AT-P0-05 with dummy work time the agent keeps its lease alive by heartbeating, then opens the PR", async () => {
+    const { logger } = captureLogger();
+    const started = Date.now();
+    expect(await runAgent({ ...env, ADLC_DUMMY_WORK_MS: "1200" }, logger)).toBe(RUN_EXIT_CODES.succeeded);
+    expect(Date.now() - started).toBeGreaterThanOrEqual(1_200);
+    expect(github.pullRequests).toHaveLength(1);
+  });
+
+  it("FR-ORC-012 the kill switch engaged during the work stops the run before the PR (exit 3)", async () => {
+    const { logger, lines } = captureLogger();
+    setTimeout(() => void new KillSwitch(new ControlFlagRepository(db), clock).engage({ kind: "human", id: "op" }, "drill"), 300);
+    expect(await runAgent({ ...env, ADLC_DUMMY_WORK_MS: "5000" }, logger)).toBe(RUN_EXIT_CODES.stoppedByDirective);
+    expect(github.pullRequests).toHaveLength(0);
+    expect(lines.join("")).toContain('"afterStep":"work"');
+  });
+
   it("AT-P0-03 a resumed run continues on the existing branch and does not commit the same change twice", async () => {
     const { logger } = captureLogger();
     expect(await runAgent(env, logger)).toBe(RUN_EXIT_CODES.succeeded);

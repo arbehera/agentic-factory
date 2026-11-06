@@ -17,6 +17,9 @@ export interface DummyContext {
   /** Checked between steps: true when the run must stop (kill switch, budget, lost lease). */
   shouldStop: () => boolean;
   logger: Logger;
+  /** Simulated work after the commit (load test only); checked against the stop directive each second. */
+  workMs?: number;
+  sleep?: (ms: number) => Promise<void>;
 }
 
 export type DummyOutcome = { status: "done"; pr: number } | { status: "stopped"; afterStep: string };
@@ -61,6 +64,12 @@ export async function runDummy(gw: GatewayClient, ctx: DummyContext): Promise<Du
   }
   const s3 = step("commit"); // the WIP is on the task branch from here on
   if (s3) return s3;
+
+  const sleep = ctx.sleep ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)));
+  for (let left = ctx.workMs ?? 0; left > 0; left -= 1_000) {
+    await sleep(Math.min(1_000, left));
+    if (ctx.shouldStop()) return { status: "stopped", afterStep: "work" };
+  }
 
   const pr = await gw.tool<{ number: number }>("github", "open_pull_request", {
     repo: ctx.repo,

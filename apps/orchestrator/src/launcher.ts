@@ -27,6 +27,8 @@ export interface LaunchConfig {
   /** Internal Docker network whose only reachable service is the gateway. */
   network: string;
   limits: RunLimits;
+  /** Optional run tuning; each set value becomes one fixed ADLC_* variable, nothing else. */
+  tuning?: { heartbeatMs?: number | undefined; dummyWorkMs?: number | undefined };
 }
 
 export type LaunchOutcome = "launched" | "skipped" | "stale" | "failed";
@@ -103,6 +105,8 @@ export class RunLauncher {
           ADLC_ROLE: definition.role,
           ADLC_REPO: project.repos[0] ?? "",
           ADLC_MODEL: definition.modelId,
+          ...(this.config.tuning?.heartbeatMs === undefined ? {} : { ADLC_HEARTBEAT_MS: String(this.config.tuning.heartbeatMs) }),
+          ...(this.config.tuning?.dummyWorkMs === undefined ? {} : { ADLC_DUMMY_WORK_MS: String(this.config.tuning.dummyWorkMs) }),
         },
       });
       await this.runs.transition(runId, "starting", ORCHESTRATOR_ACTOR, "container created", now, { containerId: handle.containerId });
