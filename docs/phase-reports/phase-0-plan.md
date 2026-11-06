@@ -233,3 +233,19 @@ Not reproduced: one earlier load run where runs took ~454 s and heartbeats stall
 - SeaweedFS gaps measured and recorded in ADR-0015: overwrites and deletes are only made visible, not refused; an admin identity can delete a locked bucket (caught through the recorded `audit.export` events); no read-only identity can read the bucket.
 - Question for Pioneer: the retention period of exported objects (ISMS). `AUDIT_EXPORT_RETENTION_DAYS` has no default; dev uses 1 day.
 
+## 10. P0-WP6 configuration-as-code (2026-11-06, credential-free part)
+| Item | State |
+|---|---|
+| GitHub (FR-GH-001) | `infra/github/factory-sample.yaml` + `config-sync` plan/apply (ADR-0016). Offline dry run: `docs/phase-reports/evidence/p0-wp6/github-plan-offline.txt`. Not applied. |
+| Jira (FR-JIRA-001) | `infra/jira/agensdlc.yaml`; desired state derived from the domain machines. Dry run: `.../jira-plan-offline.txt`. Live drift check/apply after sandbox access. |
+| Keycloak | Realm already as code (P0-WP11). |
+| Jenkins | Compose profile `ci`: pinned image + 71 pinned plugins, CasC, no controller executors, no anonymous access. Check: `.../jenkins-check.txt`. No agents, credentials or jobs yet. |
+
+**Decided 2026-11-06:** agents' GitHub identity = two GitHub Apps (`adlc-agent`, `adlc-ci`).
+
+**Questions for the human (WP6):**
+1. Merge queue (OPEN-14): `factory-sample` is owned by a personal account, and GitHub offers merge queues only to organization-owned repositories. Move it into an organization, or accept main without a merge queue in the sandbox (recorded deviation)? The GitHub plan is blocked until decided.
+2. `adlc/paths` and `adlc/gate` are required by FR-GH-001 but posted only from P3-WP3 / P1-WP2. Confirm they stay not-required in Phase 0 (otherwise no PR can merge).
+3. Jira service accounts `adlc-orchestrator` and `adlc-agent` (SDD §10.1): do they exist in pioneerindia.atlassian.net? Without them AT-P0-04 cannot show Jira refusing the agent identity.
+4. Sandbox credentials in `infra/compose/.env` (names in `.env.example`): the two GitHub App IDs and keys, a fine-grained admin token for `factory-sample`, and the Jira service account email and API token.
+

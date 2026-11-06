@@ -1,0 +1,27 @@
+# yaml-language-server: $schema=../../packages/schemas/json-schema/github-repo-config.schema.json
+# Sandbox product repository for PRs created by agents (plan Q-02, 2026-11-06). FR-GH-001, SDD §10.2.
+# Apply only with `pnpm config:github -- plan` reviewed first; changes go through PR review (CLAUDE.md §8).
+repo: arbehera/factory-sample
+defaultBranch: main
+# Agents push only here (the agent App gets no bypass anywhere).
+agentBranches: [task/*, spec/*]
+main:
+  mergeQueue:
+    required: true
+    groupSize: 1          # pilot: one PR per merge group
+    mergeMethod: MERGE    # keeps the reviewed head commit, which the evidence is bound to
+  requiredApprovals: 1
+  codeOwnerReview: true
+  dismissStaleApprovals: true
+  requireLastPushApproval: true
+  requiredStatusChecks:
+    - { context: adlc/verify, postedBy: ci }
+    - { context: adlc/evidence, postedBy: ci }
+  # FR-GH-001 also requires these; nothing posts them yet, so requiring them now would block every
+  # merge. Phase 0 report asks the human to confirm this deferral.
+  pendingStatusChecks:
+    - { context: adlc/paths, postedFrom: "P3-WP3 (FR-GH-002)" }
+    - { context: adlc/gate, postedFrom: "P1-WP2 (FR-GH-003), spec baseline PRs" }
+# Sandbox only: the repository owner reviews. Pilot repositories use one team per approver group.
+codeowners:
+  - { path: "*", owners: ["@arbehera"] }

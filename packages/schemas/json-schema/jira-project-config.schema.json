@@ -1,0 +1,112 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "site": {
+      "type": "string",
+      "format": "uri"
+    },
+    "projectKey": {
+      "type": "string",
+      "pattern": "^[A-Z][A-Z0-9]{1,9}$"
+    },
+    "serviceAccounts": {
+      "type": "object",
+      "properties": {
+        "orchestrator": {
+          "type": "string",
+          "const": "adlc-orchestrator"
+        },
+        "agent": {
+          "type": "string",
+          "const": "adlc-agent"
+        }
+      },
+      "required": [
+        "orchestrator",
+        "agent"
+      ],
+      "additionalProperties": false
+    },
+    "issueTypes": {
+      "minItems": 1,
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "customFields": {
+      "type": "array",
+      "items": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 60
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "text",
+                  "number",
+                  "datetime",
+                  "labels"
+                ]
+              }
+            },
+            "required": [
+              "name",
+              "type"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 60
+              },
+              "type": {
+                "type": "string",
+                "const": "select"
+              },
+              "options": {
+                "minItems": 1,
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            },
+            "required": [
+              "name",
+              "type",
+              "options"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      }
+    },
+    "approverGroupPrefix": {
+      "type": "string",
+      "const": "adlc-approvers-"
+    }
+  },
+  "required": [
+    "site",
+    "projectKey",
+    "serviceAccounts",
+    "issueTypes",
+    "customFields",
+    "approverGroupPrefix"
+  ],
+  "additionalProperties": false
+}

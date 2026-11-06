@@ -1,0 +1,8 @@
+# P0-WP6 Jenkins controller check, 2026-11-06 (COMPOSE_PROFILES=ci pnpm dev:up, WSL2 rootless Docker 29.3.1)
+# Jenkins 2.580.2 (jenkins/jenkins@sha256:74401de6...), checked from inside the container.
+anonymous GET /api/json            -> 403
+wrong password GET /api/json       -> 401
+admin GET /api/json                -> {"mode":"EXCLUSIVE","numExecutors":0,"useSecurity":true}
+plugins                            -> 71 installed; 0 inactive; 0 differ from infra/jenkins/plugins.txt
+log                                -> "Jenkins is fully up and running" (CasC applied; the first attempt failed on a
+                                      removed crumb-issuer attribute, fixed in casc.yaml)

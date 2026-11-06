@@ -254,6 +254,23 @@ services:
       OBJECT_STORE_SECRET_ACCESS_KEY: ${OBJECT_STORE_ADMIN_SECRET:?}
       AUDIT_EXPORT_RETENTION_DAYS: ${AUDIT_EXPORT_RETENTION_DAYS:?}
 
+  # Jenkins controller (P0-WP6, FR-CI-001), configured as code (infra/jenkins). Opt-in profile so the
+  # default stack's memory stays as it was: COMPOSE_PROFILES=ci pnpm dev:up. No agents, credentials
+  # or jobs until sandbox access (Q-04); nothing runs on the controller itself.
+  jenkins:
+    profiles: [ci]
+    image: adlc-jenkins:dev
+    restart: unless-stopped
+    environment:
+      JENKINS_ADMIN_PASSWORD: ${JENKINS_ADMIN_PASSWORD:?}
+    volumes:
+      - jenkins:/var/jenkins_home
+    networks: [adlc]
+    ports: ["127.0.0.1:8082:8080"]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    healthcheck: { <<: *health, retries: 60, test: [CMD, curl, -sf, -o, /dev/null, http://localhost:8080/login] }
+
 networks:
   adlc: {}
   agents:
@@ -265,3 +282,4 @@ volumes:
   pg-primary: {}
   pg-replica: {}
   seaweedfs: {}
+  jenkins: {}
