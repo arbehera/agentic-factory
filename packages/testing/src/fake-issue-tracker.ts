@@ -32,8 +32,16 @@ export class FakeIssueTracker implements IssueTracker {
 
   search(jql: string, limit: number): Promise<Issue[]> {
     this.calls.push(`search ${jql}`);
+    // The subset of JQL the platform uses: `project = X`, `status = "S"`, `status in ("S", ...)`;
+    // results in creation order. Filtering statuses here matters: without it, old issues fill the
+    // result window and newer matching ones are never returned (found by the AT-P0-06 drill).
     const project = /project = ([A-Z][A-Z0-9]*)/.exec(jql)?.[1];
-    return Promise.resolve([...this.issues.values()].filter((i) => !project || i.key.startsWith(`${project}-`)).slice(0, limit));
+    const one = /status = "([^"]+)"/.exec(jql)?.[1];
+    const many = /status in \(([^)]*)\)/.exec(jql)?.[1];
+    const statuses = one ? [one] : many ? [...many.matchAll(/"([^"]+)"/g)].map((m) => m[1] ?? "") : null;
+    return Promise.resolve(
+      [...this.issues.values()].filter((i) => (!project || i.key.startsWith(`${project}-`)) && (!statuses || statuses.includes(i.status))).slice(0, limit),
+    );
   }
 
   createIssue(input: NewIssue): Promise<Issue> {

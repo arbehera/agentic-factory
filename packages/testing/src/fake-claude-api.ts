@@ -12,6 +12,11 @@ export interface RecordedModelRequest {
  */
 export class FakeClaudeApi {
   readonly requests: RecordedModelRequest[] = [];
+  /**
+   * Message IDs are `<idPrefix><seq>`. Real Messages API IDs are globally unique; a long-lived fake
+   * (dev-fakes) must use a per-start prefix, or a restart would reissue IDs already in model_call.
+   */
+  constructor(private readonly idPrefix = "msg_fake_") {}
   reply = "LGTM";
   /** When set, the next request gets this HTTP status and an error body. */
   failNext: number | null = null;
@@ -36,7 +41,7 @@ export class FakeClaudeApi {
           res.writeHead(status, { "content-type": "application/json" }).end(JSON.stringify({ type: "error", error: { type: "overloaded_error", message: "fake failure" } }));
           return;
         }
-        const id = `msg_fake_${String(++this.seq).padStart(4, "0")}`;
+        const id = `${this.idPrefix}${String(++this.seq).padStart(4, "0")}`;
         res.writeHead(200, { "content-type": "application/json" }).end(
           JSON.stringify({
             id,

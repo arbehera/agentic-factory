@@ -1,3 +1,4 @@
+import { randomBytes } from "node:crypto";
 import { createLogger } from "@adlc/telemetry";
 import { createFakesServer, FakeClaudeApi } from "@adlc/testing/fakes";
 import { z } from "zod";
@@ -26,7 +27,8 @@ for (const repo of env.SEED_REPOS.split(",").map((r) => r.trim()).filter(Boolean
 server.listen(env.PORT, () => {
   logger.info({ port: env.PORT }, "dev-fakes listening (fake Jira and GitHub, in memory)");
 });
-const model = new FakeClaudeApi();
+// Unique per start: model-call IDs outlive this process in the database (found by AT-P0-01 e2e).
+const model = new FakeClaudeApi(`msg_dev_${randomBytes(6).toString("hex")}_`);
 await model.start({ port: env.MODEL_PORT, host: "0.0.0.0" });
 logger.info({ port: env.MODEL_PORT }, "fake model API listening (POST /v1/messages)");
 process.on("SIGTERM", () => {

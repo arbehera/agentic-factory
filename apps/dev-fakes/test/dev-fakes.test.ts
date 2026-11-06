@@ -116,3 +116,16 @@ describe("P0-WP11 dev-fakes: one fake Jira and GitHub shared by every service", 
     expect(() => createAdapters({ ADAPTERS: "jira-github" })).toThrow(/Q-04/);
   });
 });
+
+describe("P0-WP11 fake Jira search", () => {
+  it("applies the JQL status clause, so older non-matching issues cannot hide newer matching ones", async () => {
+    const { FakeIssueTracker } = await import("@adlc/testing/fakes");
+    const jira = new FakeIssueTracker();
+    for (let i = 1; i <= 5; i++) jira.seed({ key: `OLD-${i}`, type: "Task", status: "Done", summary: "", description: "" });
+    jira.seed({ key: "OLD-6", type: "Task", status: "To Do", summary: "", description: "" });
+    jira.seed({ key: "OLD-7", type: "Task", status: "In Progress", summary: "", description: "" });
+    expect((await jira.search('project = OLD AND status in ("To Do", "In Progress") ORDER BY created ASC', 2)).map((i) => i.key)).toEqual(["OLD-6", "OLD-7"]);
+    expect((await jira.search('project = OLD AND status = "Done"', 10)).map((i) => i.key)).toHaveLength(5);
+    expect(await jira.search("project = OLD", 3)).toHaveLength(3);
+  });
+});
