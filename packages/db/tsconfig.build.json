@@ -1,6 +1,5 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": { "outDir": "dist", "rootDir": "src" },
-  "include": ["src"],
-  "exclude": ["src/migrate-cli.ts"]
+  "include": ["src"]
 }

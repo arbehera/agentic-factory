@@ -6,7 +6,7 @@ import { ForbiddenError, PortalAuth, type Principal, type PortalRole } from "./a
 
 /** Live logs of a run's container; provided where the executor runs (P0-WP11 decides topology). */
 export interface RunLogSource {
-  follow(runId: string, containerId: string): AsyncIterable<LogLine>;
+  follow(runId: string, containerId: string): AsyncIterable<LogLine> | Promise<AsyncIterable<LogLine>>;
 }
 
 export class NotFoundError extends Error {

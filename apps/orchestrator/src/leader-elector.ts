@@ -70,7 +70,8 @@ export class LeaderElector {
 
   private async connection(): Promise<pg.Client> {
     if (this.client) return this.client;
-    const client = new pg.Client({ connectionString: this.connectionString, application_name: "adlc-orchestrator-leader" });
+    // Bounded connect and TCP keep-alive, so a vanished database cannot freeze the election.
+    const client = new pg.Client({ connectionString: this.connectionString, application_name: "adlc-orchestrator-leader", connectionTimeoutMillis: 10_000, keepAlive: true });
     client.on("error", () => {
       this.dropConnection();
     });

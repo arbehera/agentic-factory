@@ -25,6 +25,11 @@ export class ProjectRepository {
     return row ?? null;
   }
 
+  /** Projects the dispatcher serves (status `active`), oldest first. */
+  async listActive(): Promise<ProjectRow[]> {
+    return this.db.select().from(project).where(eq(project.status, "active")).orderBy(project.createdAt);
+  }
+
   async environment(id: string): Promise<DispatchEnvironment> {
     return (await this.get(id)).environment as DispatchEnvironment;
   }

@@ -185,3 +185,67 @@ Notes:
 - **AT-P0-02 passes** (time-compressed: on-duty → backup → Program Lead → ack).
 - **Deferred:** portal screenshots and Playwright e2e with Keycloak (P0-WP11); log-source topology (P0-WP11); full catalogue and digest (P3-WP6). |
 | others | not started |
+
+## 7. P0-WP11 breakdown (2026-11-06)
+
+WP11 is the first time the services run as separate processes, so it starts by giving every service an entrypoint. Steps, each a commit on `phase-0/p0-wp11-deploy-load-failover`:
+
+| Step | Content | Proves |
+|---|---|---|
+| 11a | **Runnable services.** Adapter selection in `@adlc/adapters` (`ADAPTERS=dev-fakes` → HTTP clients for a fakes service; the real Jira/GitHub clients refuse to start until Q-04). `apps/dev-fakes` serves the in-memory fakes over HTTP, plus admin calls that stand in for humans (seed, edit, approve and merge). Entrypoints for the gateway and portal-api; the orchestrator wires the executor, the issue tracker and a **minimal ready source** (Jira `To Do` tasks of registered projects; the full ready frontier FR-ORC-005 stays Phase 2). Live logs: the portal-api reads them from the orchestrator over an internal authenticated route, so only the executor host touches Docker. | units + integration |
+| 11b | **Compose stack** (`infra/compose`, `pnpm dev:up`): PostgreSQL primary + streaming replica, one-shot migrate, dev-fakes, gateway (also on the internal agent network), two orchestrator replicas, notifier, portal-api, portal-web, Keycloak (dev realm), Mailpit (SMTP sink), SeaweedFS. Images pinned by digest. Services connect as an application DB role without UPDATE/DELETE/TRUNCATE on the write-once tables. | stack health |
+| 11c | **AT-P0-05:** k6 scenario (`pnpm test:load`) seeds 20 dummy tasks and checks dispatch latency < 30 s, no heartbeat loss and that the portal lists all 20 runs. | AT-P0-05 |
+| 11d | **AT-P0-06:** failover runbook and drill script: stop the primary, promote the replica, re-point the `db` alias, measure RTO; the leader is re-elected and leases resume. | AT-P0-06 |
+| 11e | **AT-P0-01 with fakes:** fake CI posts `adlc/verify`, minimal review trigger + signer posts `adlc/evidence`, a human approves and merges through the dev-fakes admin call, the orchestrator sets Done. Playwright e2e and portal screenshots with Keycloak. | AT-P0-01 (fakes half) |
+| 11f | WORM export of audit and evidence to SeaweedFS (ADR-0006, **ADR-0015**). Done: locked segments + evidence, `pnpm audit:verify`. | NFR-006 |
+
+Decisions recorded in ADR-0014. The executor host role means the orchestrator container gets the rootless Docker socket. Agent containers never do (hard rule 6), and Kubernetes replaces this post-pilot.
+
+## 8. Answers recorded 2026-11-06
+| Q | Answer | Effect |
+|---|---|---|
+| Q-11 | Keep the current rule | `{comp:}` when it names a profile component, otherwise paths (ADR-0008). |
+| Q-12 | `metadata.version` (semver) | As implemented. |
+| Q-13 | Wall-clock budget per lease | As implemented (ADR-0009). |
+| Q-14 | 09:00–18:00 Mon–Fri, Asia/Kolkata, no holidays for now | `config/working-calendar.yaml` stays as is; the holiday calendar comes with the rota (OPEN-06/21). |
+| Q-08 | The human supplies real `specify` 1.2.6 output | AT-P0-08 stays "provisional fixtures" until the files arrive. |
+| Q-04 | Sandbox: Jira Cloud project `AGENSDLC` (pioneerindia.atlassian.net), GitHub `arbehera/agentic-factory`; Jenkins and Keycloak deployed fresh in Docker (no existing installation) | WP6 targets these. Credentials are never pasted in chat; the storage location is still to be agreed. |
+| Q-02 | Platform remote: `https://github.com/arbehera/agentic-factory` | Phase 0 branches are pushed there, one PR per work package. A sandbox product repository for agent PRs is still needed for AT-P0-01/04 (WP6). |
+| Q-02 (sandbox product repo) | `https://github.com/arbehera/factory-sample`, for PRs created by agents (answer 2026-11-06) | WP6 targets it for AT-P0-01/04. It is empty, public and owned by a personal account: rulesets work there, but GitHub's merge queue needs an organization-owned repository (OPEN-14), to be confirmed in WP6. |
+| Q-04 (credentials) | Local git-ignored `.env` file for the sandbox identities | WP6 documents the variable names; the vault replaces it with the pilot (NFR-001). |
+| Q-04 (Jenkins, Keycloak) | Added to the Compose stack | WP6 adds a pinned Jenkins image configured as code; Keycloak is already in Compose. |
+| Q-09 | Deny-list accepted as is | Q-09 closed; changes later by PR. |
+
+## 9. P0-WP11 stack runs (2026-11-06, WSL2 rootless Docker 29.3.1, WSL memory 10 GB)
+| AT | Result | Evidence |
+|---|---|---|
+| AT-P0-01 (fakes half) | **pass** | `pnpm test:e2e`: To Do -> In Progress -> In Review -> review run + signed `adlc/evidence` -> Awaiting Approval -> human merge -> Done, all audited; Playwright portal checks pass. Screenshots: `docs/phase-reports/evidence/p0-wp11/`. Sandbox half waits for Q-04. |
+| AT-P0-05 | **pass** | `pnpm test:load`: 20 runs; dispatch latency max 2.6 s (< 30 s); heartbeat age max 5 s; 20 running at once; 20/20 succeeded. |
+| AT-P0-06 | **pass** | `pnpm test:failover`: primary + leader lost, replica promoted, new leader after 4 s (RTO target 1 h); replication lag 0 bytes; in-flight lease kept its fencing token, renewed, and the run succeeded; new work dispatched. |
+
+Bugs found by these runs and fixed: services crashing when PostgreSQL closed idle connections; ready-source starvation behind in-flight tasks; Keycloak placeholder names blocked sign-in; fake Jira ignored status clauses; fake model API reused message IDs across restarts; `dev:down` broken and the post-failover stack restartable into two `db` hosts; PKCE sign-in in the test browser.
+Not reproduced: one earlier load run where runs took ~454 s and heartbeats stalled. The next runs (single-run probe and the full load test) showed 5 s heartbeats and on-time completion; most likely a side effect of the fake-search bug, not proven.
+
+**11f write-once export (2026-11-06, same stack):**
+- The orchestrator leader sealed segment 1 (24 events, 1 evidence record) and, after `pnpm test:e2e`, segment 2 (25 events, 1 evidence record). `pnpm audit:verify`: no findings.
+- Tamper drill, both caught (`audit:verify` exit 1): the exporter identity overwrote segment 1 → `object-rewritten` (the locked original is still what gets verified); a superuser edited an exported audit row with triggers off → `database-diverges` (seq 3, changed).
+- Found and fixed: SeaweedFS ran out of volumes (default 8; now sized to the disk); SeaweedFS `ListObjectsV2` returns wrong keys on versioned buckets (keys come from the version listing); a row edit that left the stored hash column alone escaped the first cross-check (rows are now re-hashed); portal-web kept a recreated portal-api's old address (502; nginx now resolves per request).
+- SeaweedFS gaps measured and recorded in ADR-0015: overwrites and deletes are only made visible, not refused; an admin identity can delete a locked bucket (caught through the recorded `audit.export` events); no read-only identity can read the bucket.
+- Question for Pioneer: the retention period of exported objects (ISMS). `AUDIT_EXPORT_RETENTION_DAYS` has no default; dev uses 1 day.
+
+## 10. P0-WP6 configuration-as-code (2026-11-06, credential-free part)
+| Item | State |
+|---|---|
+| GitHub (FR-GH-001) | `infra/github/factory-sample.yaml` + `config-sync` plan/apply (ADR-0016). Offline dry run: `docs/phase-reports/evidence/p0-wp6/github-plan-offline.txt`. Not applied. |
+| Jira (FR-JIRA-001) | `infra/jira/agensdlc.yaml`; desired state derived from the domain machines. Dry run: `.../jira-plan-offline.txt`. Live drift check/apply after sandbox access. |
+| Keycloak | Realm already as code (P0-WP11). |
+| Jenkins | Compose profile `ci`: pinned image + 71 pinned plugins, CasC, no controller executors, no anonymous access. Check: `.../jenkins-check.txt`. No agents, credentials or jobs yet. |
+
+**Decided 2026-11-06:** agents' GitHub identity = two GitHub Apps (`adlc-agent`, `adlc-ci`).
+
+**Questions for the human (WP6):**
+1. Merge queue (OPEN-14): `factory-sample` is owned by a personal account, and GitHub offers merge queues only to organization-owned repositories. Move it into an organization, or accept main without a merge queue in the sandbox (recorded deviation)? The GitHub plan is blocked until decided.
+2. `adlc/paths` and `adlc/gate` are required by FR-GH-001 but posted only from P3-WP3 / P1-WP2. Confirm they stay not-required in Phase 0 (otherwise no PR can merge).
+3. Jira service accounts `adlc-orchestrator` and `adlc-agent` (SDD §10.1): do they exist in pioneerindia.atlassian.net? Without them AT-P0-04 cannot show Jira refusing the agent identity.
+4. Sandbox credentials in `infra/compose/.env` (names in `.env.example`): the two GitHub App IDs and keys, a fine-grained admin token for `factory-sample`, and the Jira service account email and API token.
+

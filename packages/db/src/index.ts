@@ -15,3 +15,4 @@ export * from "./lease-repository.js";
 export * from "./pack-version-repository.js";
 export * from "./project-repository.js";
 export * from "./schema.js";
+export * from "./roles.js";

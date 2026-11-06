@@ -7,3 +7,11 @@ coverage/
 .env.*
 !.env.example
 dist-bundle/
+
+# k6 results (P0-WP11)
+test/load/results/
+# Playwright results and screenshots (P0-WP11)
+test/e2e/results/
+
+# Proxy CA certificates for local Jenkins image builds (P0-WP6)
+infra/jenkins/certs/*.crt

@@ -11,6 +11,10 @@
     "./postgres-global-setup": {
       "types": "./dist/postgres-global-setup.d.ts",
       "default": "./dist/postgres-global-setup.js"
+    },
+    "./fakes": {
+      "types": "./dist/fakes.d.ts",
+      "default": "./dist/fakes.js"
     }
   },
   "scripts": {

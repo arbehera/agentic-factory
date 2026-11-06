@@ -3,7 +3,10 @@ import {
   DECISION_CLASSES,
   DECISION_ROUTES,
   decisionInvariantViolation,
+  AUDIT_EXPORT_FORMAT,
   type AuditEventContent,
+  type AuditExportSegment,
+  type ExportedEvidence,
 } from "@adlc/domain";
 import { z } from "zod";
 
@@ -34,6 +37,39 @@ export const auditEventInputSchema = z.strictObject({
   correlation: correlationSchema,
 }) satisfies z.ZodType<AuditEventContent>;
 
+/** Objects read back from the write-once store are external input (CLAUDE.md §6; ADR-0015). */
+const chainPointSchema = z.strictObject({ seq: z.number().int().min(0), hash: sha256HexSchema });
+
+const exportedEventSchema = z.strictObject({
+  seq: z.number().int().positive(),
+  ts: z.iso.datetime(),
+  actor: actorSchema,
+  action: z.string().min(1),
+  target: z.string().min(1),
+  reason: z.string(),
+  beforeHash: sha256HexSchema.nullable(),
+  afterHash: sha256HexSchema.nullable(),
+  correlation: correlationSchema,
+  prevHash: sha256HexSchema,
+  hash: sha256HexSchema,
+});
+
+export const auditExportSegmentSchema = z.strictObject({
+  format: z.literal(AUDIT_EXPORT_FORMAT),
+  index: z.number().int().positive(),
+  anchor: chainPointSchema,
+  last: chainPointSchema,
+  exportedAt: z.iso.datetime(),
+  events: z.array(exportedEventSchema).min(1),
+}) satisfies z.ZodType<AuditExportSegment>;
+
+export const exportedEvidenceSchema = z.looseObject({
+  repo: z.string().min(1),
+  prNumber: z.number().int().positive(),
+  headSha: z.string().regex(/^[0-9a-f]{40}$/),
+  envelope: z.unknown(),
+}) satisfies z.ZodType<ExportedEvidence>;
+
 /** A Decision as raised through the `decisions` MCP server or by the orchestrator (spec.md §5). */
 export const decisionInputSchema = z
   .strictObject({
@@ -58,6 +94,7 @@ export * from "./json-schema.js";
 export * from "./tasks-import.js";
 export * from "./packs.js";
 export * from "./reviewer-sets.js";
+export * from "./platform-config.js";
 export * from "./rota.js";
 export * from "./working-calendar.js";
 export * from "./role-policy.js";

@@ -1,0 +1,27 @@
+{
+  "name": "@adlc/config-sync",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "config": "tsx src/cli.ts"
+  },
+  "dependencies": {
+    "@adlc/domain": "workspace:*",
+    "@adlc/pack-sdk": "workspace:*",
+    "@adlc/schemas": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "22.18.12"
+  }
+}

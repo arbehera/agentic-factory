@@ -1,13 +1,17 @@
 import { randomUUID } from "node:crypto";
 import type { JobQueue, JobRow } from "@adlc/db";
-import type { Clock } from "@adlc/control-plane";
+import type { Clock } from "./clock.js";
 import type { Logger } from "@adlc/telemetry";
 
 export type JobHandler = (job: JobRow) => Promise<unknown>;
 
+/** Signing requests (one per PR head). Only the signer claims them, on its own node with the key. */
+export const SIGN_EVIDENCE_JOB = "sign-evidence";
+
 /**
- * Job worker run by every orchestrator replica (FR-ORC-015: replicas other than the leader are
- * stateless workers). Claims one job at a time from the PostgreSQL queue and runs its handler.
+ * Job worker on the PostgreSQL queue (hard rule 8). Every orchestrator replica runs one for its job
+ * kinds (FR-ORC-015: replicas other than the leader are stateless workers); the signer runs one
+ * for signing jobs only, on its own node. Claims one job at a time from the PostgreSQL queue and runs its handler.
  */
 export class Worker {
   readonly id = `worker-${randomUUID().slice(0, 8)}`;

@@ -1,0 +1,24 @@
+# yaml-language-server: $schema=../../packages/schemas/json-schema/jira-project-config.schema.json
+# Sandbox Jira project (plan Q-04). FR-JIRA-001, SDD §10.1. Statuses, transitions and gate IDs are
+# not listed here: they come from @adlc/domain (task-status, gate) so Jira matches the orchestrator.
+site: https://pioneerindia.atlassian.net
+projectKey: AGENSDLC
+serviceAccounts:
+  orchestrator: adlc-orchestrator   # creates issues after G4; the only identity that may set Done
+  agent: adlc-agent                 # the gateway's identity for agents; no gate transitions
+issueTypes: [Epic, Story, Task, Bug, Change Request, Decision, Risk, Nonconformance, Gate]
+customFields:
+  - { name: specRef, type: text }
+  - { name: requirement IDs, type: labels }
+  - { name: component, type: text }
+  - { name: complexity, type: select, options: [S, M, L] }
+  - { name: flags, type: labels }
+  - { name: agent role, type: text }
+  - { name: agent version, type: text }
+  - { name: model tier, type: select, options: [A, B] }
+  - { name: lease expiry, type: datetime }
+  - { name: tokens used, type: number }
+  - { name: Decision ID, type: text }
+  - { name: External ID, type: text }
+# Groups adlc-approvers-<gate> (one per gate in @adlc/domain); members are added by humans only.
+approverGroupPrefix: adlc-approvers-

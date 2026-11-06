@@ -12,13 +12,19 @@ export interface RecordedModelRequest {
  */
 export class FakeClaudeApi {
   readonly requests: RecordedModelRequest[] = [];
+  /**
+   * Message IDs are `<idPrefix><seq>`. Real Messages API IDs are globally unique; a long-lived fake
+   * (dev-fakes) must use a per-start prefix, or a restart would reissue IDs already in model_call.
+   */
+  constructor(private readonly idPrefix = "msg_fake_") {}
   reply = "LGTM";
   /** When set, the next request gets this HTTP status and an error body. */
   failNext: number | null = null;
   private server: Server | null = null;
   private seq = 0;
 
-  async start(): Promise<string> {
+  /** Listens on 127.0.0.1 and a free port by default; the dev-fakes service binds all interfaces. */
+  async start(opts: { port?: number; host?: string } = {}): Promise<string> {
     this.server = createServer((req, res) => {
       let raw = "";
       req.on("data", (c: Buffer) => (raw += c.toString("utf8")));
@@ -35,7 +41,7 @@ export class FakeClaudeApi {
           res.writeHead(status, { "content-type": "application/json" }).end(JSON.stringify({ type: "error", error: { type: "overloaded_error", message: "fake failure" } }));
           return;
         }
-        const id = `msg_fake_${String(++this.seq).padStart(4, "0")}`;
+        const id = `${this.idPrefix}${String(++this.seq).padStart(4, "0")}`;
         res.writeHead(200, { "content-type": "application/json" }).end(
           JSON.stringify({
             id,
@@ -51,9 +57,9 @@ export class FakeClaudeApi {
     });
     const server = this.server;
     await new Promise<void>((resolve) => {
-      server.listen(0, "127.0.0.1", resolve);
+      server.listen(opts.port ?? 0, opts.host ?? "127.0.0.1", resolve);
     });
-    return `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+    return `http://${opts.host === "0.0.0.0" || opts.host === undefined ? "127.0.0.1" : opts.host}:${(server.address() as AddressInfo).port}`;
   }
 
   async stop(): Promise<void> {

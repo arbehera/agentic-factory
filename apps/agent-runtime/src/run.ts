@@ -21,6 +21,8 @@ export const agentEnvSchema = z.object({
   ADLC_HEAD_SHA: z.string().regex(/^[0-9a-f]{40}$/).optional(),
   /** FR-ORC-008: 5 minutes, i.e. three beats per 15-minute lease. */
   ADLC_HEARTBEAT_MS: z.coerce.number().int().positive().default(300_000),
+  /** Phase 0 load test (AT-P0-05): dummy work time before the PR; heartbeats continue meanwhile. */
+  ADLC_DUMMY_WORK_MS: z.coerce.number().int().min(0).max(3_600_000).default(0),
 });
 
 /**
@@ -52,7 +54,7 @@ export async function runAgent(env: Record<string, string | undefined>, logger: 
       log.error("lease is not held; not starting");
       return RUN_EXIT_CODES.failed;
     }
-    const outcome = await runDummy(gateway, { runId: e.ADLC_RUN_ID, taskKey: e.ADLC_TASK_KEY, repo: e.ADLC_REPO, shouldStop: () => heart.stopRequested(), logger: log });
+    const outcome = await runDummy(gateway, { runId: e.ADLC_RUN_ID, taskKey: e.ADLC_TASK_KEY, repo: e.ADLC_REPO, shouldStop: () => heart.stopRequested(), logger: log, workMs: e.ADLC_DUMMY_WORK_MS });
     if (outcome.status === "stopped") {
       log.warn({ afterStep: outcome.afterStep, leaseLost: heart.leaseLost() }, "stopped on directive");
       return heart.leaseLost() ? RUN_EXIT_CODES.failed : RUN_EXIT_CODES.stoppedByDirective;

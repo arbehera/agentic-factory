@@ -16,12 +16,14 @@ export class JobLockLostError extends Error {
 export class JobQueue {
   constructor(private readonly db: Db) {}
 
-  /** Enqueues a job; with a dedupe key, enqueueing the same job again is a no-op. */
-  async enqueue(input: { kind: string; payload: Record<string, unknown>; dedupeKey?: string; runAfter: Date; maxAttempts?: number }): Promise<void> {
-    await this.db
+  /** Enqueues a job; with a dedupe key, enqueueing the same job again is a no-op. True if inserted. */
+  async enqueue(input: { kind: string; payload: Record<string, unknown>; dedupeKey?: string; runAfter: Date; maxAttempts?: number }): Promise<boolean> {
+    const inserted = await this.db
       .insert(job)
       .values({ kind: input.kind, payload: input.payload, dedupeKey: input.dedupeKey ?? null, runAfter: input.runAfter, maxAttempts: input.maxAttempts ?? 3 })
-      .onConflictDoNothing({ target: job.dedupeKey });
+      .onConflictDoNothing({ target: job.dedupeKey })
+      .returning({ id: job.id });
+    return inserted.length > 0;
   }
 
   /** Claims the oldest ready job of the given kinds, or returns null. */
