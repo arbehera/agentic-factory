@@ -21,9 +21,7 @@ jenkins:
         - group:
             name: authenticated
             permissions: ["Overall/Read", "Job/Read"]
-  crumbIssuer:
-    standard:
-      excludeClientIPFromCrumb: false
+  crumbIssuer: "standard"
   remotingSecurity:
     enabled: true
 unclassified:
