@@ -17,8 +17,10 @@
     "start": "node dist/main.js"
   },
   "dependencies": {
+    "@adlc/control-plane": "workspace:*",
     "@adlc/db": "workspace:*",
     "@adlc/domain": "workspace:*",
+    "@adlc/executor": "workspace:*",
     "@adlc/telemetry": "workspace:*",
     "@nestjs/common": "11.1.6",
     "@nestjs/core": "11.1.6",

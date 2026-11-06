@@ -1,0 +1,2 @@
+ALTER TABLE "project" ADD COLUMN "environment" text DEFAULT 'production' NOT NULL;--> statement-breakpoint
+ALTER TABLE "project" ADD CONSTRAINT "project_environment_chk" CHECK ("project"."environment" in ('sandbox', 'production'));

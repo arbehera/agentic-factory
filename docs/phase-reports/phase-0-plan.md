@@ -72,7 +72,7 @@ Each WP is one PR (or less). Conventional Commits with `Implements:` / `Tests:` 
 |---|---|---|
 | Q-01 | Jenkins | Root `Jenkinsfile` calls `pnpm verify`. |
 | Q-02 | Human creates the remote | Branches stay local until the URL is shared; then one PR per WP. |
-| Q-03 | Rootless Docker in WSL2 on the dev machine | Container security and load tests (WP4, WP11) run in WSL2; setup steps go in a runbook with WP4. |
+| Q-03 | Rootless Docker in WSL2 on the dev machine | Container security and load tests (WP4, WP11) run in WSL2. Setup: `docs/runbooks/wsl2-rootless-docker.md`; check: `scripts/dev/check-rootless-docker.sh` (10 checks fail on 2026-11-05, before setup). |
 | Q-04 | Sandbox later; fakes now | AT-P0-01/04 built against fakes + dry-run; reported "not run" until sandbox access exists. |
 | Q-05 | SeaweedFS (Apache-2.0) | ADR-0006. S3-compatible `ObjectStore` adapter; used by the WORM export (WP11). |
 | Q-06 | Pin Node 22 everywhere | `engines` = `>=22 <23`; CI and images use 22. The dev machine needs Node 22 installed (currently 24). |
@@ -158,4 +158,13 @@ Notes:
 - **AT-P0-04 passes at the gateway layer** (no merge/approve/delete tools; Done, Gate and `main` refused, end to end over MCP). The platform layer needs P0-WP6 + sandbox.
 - Security review finding fixed: Decision answers are bound to owner role, non-human route and a different raiser.
 - Deferred: real Jira/GitHub clients and the gateway entrypoint (Q-04); injection screening and model-call logging (P0-WP7 / Phase 3). |
+| P0-WP4 | done on `phase-0/p0-wp4-executor`:
+- `packages/executor`: hardened Docker backend; daemon baseline; trusted digests; internal network.
+- PostgreSQL job queue; `RunLauncher` / `Supervisor` / `Worker`; FR-ORC-014 slots.
+- Gateway heartbeat endpoint; `packages/control-plane`.
+- `apps/agent-runtime`: dummy agent, bundle, image.
+- WSL2 runbook + check script. ADR-0011.
+- Dev host: Ubuntu 24.04.1, WSL 2.6.3, Docker Engine 29.3.1 rootless.
+- **Proven on rootless Docker:** an agent container from the inside (uid 65532, no caps, no-new-privs, seccomp, read-only root, no socket, limits, no egress, gateway reachable); the agent image runs under it.
+- **Deferred:** containerised agent ↔ containerised gateway (P0-WP11 Compose); log archiving (P0-WP10/WP11); duplicate-PR check (needs real client, Q-04). |
 | others | not started |

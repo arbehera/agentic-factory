@@ -1,7 +1,7 @@
 import "reflect-metadata";
 import { NestFactory } from "@nestjs/core";
 import { createLogger } from "@adlc/telemetry";
-import { systemClock } from "./clock.js";
+import { systemClock } from "@adlc/control-plane";
 import { loadConfig } from "./config.js";
 import { AppModule } from "./http/app.module.js";
 import { buildOrchestrator } from "./orchestrator.js";

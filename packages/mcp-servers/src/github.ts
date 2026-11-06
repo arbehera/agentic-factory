@@ -26,6 +26,17 @@ export const githubTools: ToolDef[] = [
   }),
   defineTool({
     server: "github",
+    name: "get_branch",
+    description: "Get the head commit SHA of a branch (null if it does not exist).",
+    input: z.strictObject({ repo, branch: ref }),
+    taskWrite: false,
+    handle: async (ctx, a, d) => {
+      assertRepo(ctx, a.repo);
+      return { branch: a.branch, sha: await d.github.getBranch(a.repo, a.branch) };
+    },
+  }),
+  defineTool({
+    server: "github",
     name: "create_branch",
     description: "Create your task branch from main (or another ref).",
     input: z.strictObject({ repo, branch: ref, from: ref.default("main") }),

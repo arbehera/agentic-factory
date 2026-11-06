@@ -8,7 +8,7 @@ export const SCAN_ROOTS = ["apps", "packages"] as const;
 export const DENYLIST_PATH = "packages/config/neutrality-denylist.txt";
 export const ALLOWLIST_PATH = "packages/config/neutrality-allowlist.txt";
 
-const SKIPPED_DIRS = new Set(["node_modules", "dist", "coverage", ".turbo"]);
+const SKIPPED_DIRS = new Set(["node_modules", "dist", "dist-bundle", "coverage", ".turbo"]);
 
 export interface NeutralityFinding {
   /** Repo-relative path with forward slashes. */

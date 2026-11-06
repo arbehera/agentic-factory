@@ -2,11 +2,12 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { EnvSecretProvider } from "@adlc/adapters";
 import { leaseDeadline, type Actor } from "@adlc/domain";
-import { AgentRunRepository, createDb, GatewaySessionRepository, LeaseRepository, runMigrations, type Db } from "@adlc/db";
+import { AgentRunRepository, ControlFlagRepository, createDb, GatewaySessionRepository, LeaseRepository, runMigrations, type Db } from "@adlc/db";
 import { allTools } from "@adlc/mcp-servers";
 import { rolePolicySchema, type RolePolicy } from "@adlc/schemas";
 import { createLogger, type Logger } from "@adlc/telemetry";
 import { FakeIssueTracker, FakeSourceControl, freshDatabase, seedProjectAndDefinition, type TestDatabase } from "@adlc/testing";
+import { HeartbeatService, KillSwitch } from "@adlc/control-plane";
 import { Gateway } from "../src/gateway.js";
 
 export { skipIntegration } from "@adlc/testing";
@@ -66,6 +67,7 @@ export async function gatewayHarness(policies: RolePolicy[] = [enginePolicy]): P
   const secrets = new EnvSecretProvider({ ADLC_SECRET_JIRA_AGENT: SECRET });
   await secrets.get("jira-agent"); // as the gateway does when it builds the Jira adapter
 
-  const gateway = new Gateway({ db, tools: allTools, policies: new Map(policies.map((p) => [p.role, p])), adapters: { jira, github }, secrets, clock, logger: silentLogger });
+  const heartbeats = new HeartbeatService(new LeaseRepository(db), new KillSwitch(new ControlFlagRepository(db), clock), clock);
+  const gateway = new Gateway({ db, tools: allTools, policies: new Map(policies.map((p) => [p.role, p])), adapters: { jira, github }, secrets, heartbeats, clock, logger: silentLogger });
   return { t, db, gateway, jira, github, clock, token, runId: run.id, fencingToken: lease.fencingToken, projectId: seed.projectId, close: () => t.close() };
 }

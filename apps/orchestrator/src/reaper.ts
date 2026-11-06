@@ -1,6 +1,6 @@
 import { leaseExpiryReason } from "@adlc/domain";
 import type { AgentRunRepository, LeaseRepository } from "@adlc/db";
-import type { Clock } from "./clock.js";
+import type { Clock } from "@adlc/control-plane";
 import { retireRun } from "./runs.js";
 
 export interface ReapedLease {

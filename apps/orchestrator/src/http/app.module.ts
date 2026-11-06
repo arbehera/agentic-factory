@@ -33,7 +33,7 @@ export class HealthController {
 class Lifecycle implements OnModuleInit, OnApplicationShutdown {
   constructor(@Inject(ORCHESTRATOR) private readonly orch: Orchestrator) {}
   onModuleInit(): void {
-    this.orch.runtime.start();
+    this.orch.start();
   }
   async onApplicationShutdown(): Promise<void> {
     await this.orch.close();

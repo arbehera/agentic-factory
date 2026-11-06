@@ -88,7 +88,7 @@ describe.skipIf(skipIntegration)("P0-WP5 gateway pipeline", () => {
 
   it("refuses to start with a policy that names a tool that does not exist", () => {
     const bad = rolePolicySchema.parse({ role: "x", tools: ["github.merge_pull_request"] });
-    expect(() => new Gateway({ db: h.db, tools: allTools, policies: new Map([["x", bad]]), adapters: { jira: h.jira, github: h.github }, secrets: { get: () => Promise.resolve(""), knownValues: () => [] }, clock: h.clock, logger: silentLogger })).toThrow(GatewayConfigError);
+    expect(() => new Gateway({ db: h.db, tools: allTools, policies: new Map([["x", bad]]), adapters: { jira: h.jira, github: h.github }, secrets: { get: () => Promise.resolve(""), knownValues: () => [] }, heartbeats: undefined as never, clock: h.clock, logger: silentLogger })).toThrow(GatewayConfigError);
   });
 
   it("lists only the tools the role may call", async () => {

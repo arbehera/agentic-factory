@@ -36,11 +36,75 @@ importers:
         specifier: 3.2.4
         version: 3.2.4(@types/node@22.18.12)(tsx@4.20.6)(yaml@2.9.1)
 
+  apps/agent-runtime:
+    dependencies:
+      '@adlc/executor':
+        specifier: workspace:*
+        version: link:../../packages/executor
+      '@adlc/telemetry':
+        specifier: workspace:*
+        version: link:../../packages/telemetry
+      '@modelcontextprotocol/sdk':
+        specifier: 1.17.5
+        version: 1.17.5
+      zod:
+        specifier: 4.1.12
+        version: 4.1.12
+    devDependencies:
+      '@adlc/adapters':
+        specifier: workspace:*
+        version: link:../../packages/adapters
+      '@adlc/control-plane':
+        specifier: workspace:*
+        version: link:../../packages/control-plane
+      '@adlc/db':
+        specifier: workspace:*
+        version: link:../../packages/db
+      '@adlc/domain':
+        specifier: workspace:*
+        version: link:../../packages/domain
+      '@adlc/gateway':
+        specifier: workspace:*
+        version: link:../gateway
+      '@adlc/mcp-servers':
+        specifier: workspace:*
+        version: link:../../packages/mcp-servers
+      '@adlc/schemas':
+        specifier: workspace:*
+        version: link:../../packages/schemas
+      '@adlc/testing':
+        specifier: workspace:*
+        version: link:../../packages/testing
+      '@nestjs/common':
+        specifier: 11.1.6
+        version: 11.1.6(reflect-metadata@0.2.2)(rxjs@7.8.2)
+      '@nestjs/core':
+        specifier: 11.1.6
+        version: 11.1.6(@nestjs/common@11.1.6(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/platform-express@11.1.6)(reflect-metadata@0.2.2)(rxjs@7.8.2)
+      '@nestjs/platform-express':
+        specifier: 11.1.6
+        version: 11.1.6(@nestjs/common@11.1.6(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.6)
+      '@types/dockerode':
+        specifier: 3.3.42
+        version: 3.3.42
+      dockerode:
+        specifier: 4.0.7
+        version: 4.0.7
+      esbuild:
+        specifier: 0.25.12
+        version: 0.25.12
+      reflect-metadata:
+        specifier: 0.2.2
+        version: 0.2.2
+
   apps/gateway:
     dependencies:
       '@adlc/adapters':
         specifier: workspace:*
         version: link:../../packages/adapters
+      '@adlc/control-plane':
+        specifier: workspace:*
+        version: link:../../packages/control-plane
       '@adlc/db':
         specifier: workspace:*
         version: link:../../packages/db
@@ -99,12 +163,18 @@ importers:
 
   apps/orchestrator:
     dependencies:
+      '@adlc/control-plane':
+        specifier: workspace:*
+        version: link:../../packages/control-plane
       '@adlc/db':
         specifier: workspace:*
         version: link:../../packages/db
       '@adlc/domain':
         specifier: workspace:*
         version: link:../../packages/domain
+      '@adlc/executor':
+        specifier: workspace:*
+        version: link:../../packages/executor
       '@adlc/telemetry':
         specifier: workspace:*
         version: link:../../packages/telemetry
@@ -153,6 +223,22 @@ importers:
         specifier: 4.0.2
         version: 4.0.2
 
+  packages/control-plane:
+    dependencies:
+      '@adlc/db':
+        specifier: workspace:*
+        version: link:../db
+      '@adlc/domain':
+        specifier: workspace:*
+        version: link:../domain
+    devDependencies:
+      '@adlc/testing':
+        specifier: workspace:*
+        version: link:../testing
+      '@types/node':
+        specifier: 22.18.12
+        version: 22.18.12
+
   packages/db:
     dependencies:
       '@adlc/domain':
@@ -179,6 +265,19 @@ importers:
         version: 0.31.5
 
   packages/domain: {}
+
+  packages/executor:
+    dependencies:
+      dockerode:
+        specifier: 4.0.7
+        version: 4.0.7
+    devDependencies:
+      '@types/dockerode':
+        specifier: 3.3.42
+        version: 3.3.42
+      '@types/node':
+        specifier: 22.18.12
+        version: 22.18.12
 
   packages/mcp-servers:
     dependencies:
@@ -247,6 +346,9 @@ importers:
       '@adlc/adapters':
         specifier: workspace:*
         version: link:../adapters
+      '@adlc/executor':
+        specifier: workspace:*
+        version: link:../executor
       '@testcontainers/postgresql':
         specifier: 11.7.1
         version: 11.7.1
@@ -1100,6 +1202,9 @@ packages:
   '@types/docker-modem@3.0.6':
     resolution: {integrity: sha512-yKpAGEuKRSS8wwx0joknWxsmLha78wNMe9R2S3UNsVOkZded8UqOrV8KoeDXoXsjndxwyF3eIhyClGbO1SEhEg==}
 
+  '@types/dockerode@3.3.42':
+    resolution: {integrity: sha512-U1jqHMShibMEWHdxYhj3rCMNCiLx5f35i4e3CEUuW+JSSszc/tVqc6WCAPdhwBymG5R/vgbcceagK0St7Cq6Eg==}
+
   '@types/dockerode@4.0.2':
     resolution: {integrity: sha512-hA4myZ0XzwHG/p/eCLElYsQS3y1XZfvi6AfLFKVp1SNpPkO6J3xLatacAFVkReTxXRoIa3eHJmhJi9w6I3+zNA==}
 
@@ -1540,6 +1645,10 @@ packages:
 
   dockerode@4.0.12:
     resolution: {integrity: sha512-/bCZd6KlGcjZO8Buqmi/vXuqEGVEZ0PNjx/biBNqJD3MhK9DmdiAuKxqfNhflgDESDIiBz3qF+0e55+CpnrUcw==}
+    engines: {node: '>= 8.0'}
+
+  dockerode@4.0.7:
+    resolution: {integrity: sha512-R+rgrSRTRdU5mH14PZTCPZtW/zw3HDWNTS/1ZAQpL/5Upe/ye5K9WQkIysu4wBoiMwKynsz0a8qWuGsHgEvSAA==}
     engines: {node: '>= 8.0'}
 
   drizzle-kit@0.31.5:
@@ -3514,6 +3623,12 @@ snapshots:
       '@types/node': 22.18.12
       '@types/ssh2': 1.15.6
 
+  '@types/dockerode@3.3.42':
+    dependencies:
+      '@types/docker-modem': 3.0.6
+      '@types/node': 22.18.12
+      '@types/ssh2': 1.15.6
+
   '@types/dockerode@4.0.2':
     dependencies:
       '@types/docker-modem': 3.0.6
@@ -4014,6 +4129,18 @@ snapshots:
       - supports-color
 
   dockerode@4.0.12:
+    dependencies:
+      '@balena/dockerignore': 1.0.2
+      '@grpc/grpc-js': 1.14.7
+      '@grpc/proto-loader': 0.7.15
+      docker-modem: 5.0.7
+      protobufjs: 7.6.6
+      tar-fs: 2.1.5
+      uuid: 10.0.0
+    transitivePeerDependencies:
+      - supports-color
+
+  dockerode@4.0.7:
     dependencies:
       '@balena/dockerignore': 1.0.2
       '@grpc/grpc-js': 1.14.7

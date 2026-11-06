@@ -1,8 +1,8 @@
-import { agentRunMachine, stateHash, type Actor, type AgentRunKind, type AgentRunState } from "@adlc/domain";
-import { eq } from "drizzle-orm";
+import { agentRunMachine, stateHash, type Actor, type ActiveRuns, type AgentRunKind, type AgentRunState } from "@adlc/domain";
+import { and, eq, inArray, isNotNull, sql } from "drizzle-orm";
 import { AuditRepository } from "./audit-repository.js";
 import type { DbExecutor } from "./client.js";
-import { agentRun } from "./schema.js";
+import { agentRun, project } from "./schema.js";
 
 export type AgentRunRow = typeof agentRun.$inferSelect;
 
@@ -11,6 +11,8 @@ export class AgentRunNotFoundError extends Error {
 }
 
 const TERMINAL = new Set<AgentRunState>(agentRunMachine.terminal);
+/** Runs that hold an executor slot: claimed (queued) or executing. */
+export const SLOT_HOLDING_STATES: readonly AgentRunState[] = ["queued", "starting", "running"];
 const runHash = (r: AgentRunRow) => stateHash({ id: r.id, state: r.state, step: r.step, containerId: r.containerId });
 
 /** AgentRun lifecycle (spec.md §5) with audited, machine-checked transitions. */
@@ -85,5 +87,23 @@ export class AgentRunRepository {
 
   isTerminal(row: AgentRunRow): boolean {
     return TERMINAL.has(row.state as AgentRunState);
+  }
+
+  /** Runs holding an executor slot, in total and for sandbox projects (FR-ORC-014). */
+  async countActive(): Promise<ActiveRuns> {
+    const [row] = await this.db
+      .select({
+        total: sql<string>`count(*)`,
+        sandbox: sql<string>`count(*) filter (where ${project.environment} = 'sandbox')`,
+      })
+      .from(agentRun)
+      .innerJoin(project, eq(project.id, agentRun.projectId))
+      .where(inArray(agentRun.state, [...SLOT_HOLDING_STATES]));
+    return { total: Number(row?.total ?? 0), sandbox: Number(row?.sandbox ?? 0) };
+  }
+
+  /** Runs that own a container and may still be executing (supervisor input). */
+  async listWithContainer(states: readonly AgentRunState[] = ["starting", "running"]): Promise<AgentRunRow[]> {
+    return this.db.select().from(agentRun).where(and(inArray(agentRun.state, [...states]), isNotNull(agentRun.containerId)));
   }
 }
