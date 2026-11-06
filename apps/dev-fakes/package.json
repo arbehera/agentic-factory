@@ -17,12 +17,15 @@
     "start": "node dist/main.js"
   },
   "dependencies": {
-    "@adlc/testing": "workspace:*",
     "@adlc/telemetry": "workspace:*",
+    "@adlc/testing": "workspace:*",
+    "pg": "8.16.3",
     "zod": "4.1.12"
   },
   "devDependencies": {
     "@adlc/adapters": "workspace:*",
-    "@types/node": "22.18.12"
+    "@adlc/db": "workspace:*",
+    "@types/node": "22.18.12",
+    "@types/pg": "8.15.5"
   }
 }

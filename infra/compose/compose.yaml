@@ -1,0 +1,204 @@
+# ADLC platform — Compose stack with fakes (P0-WP11, ADR-0014). Dev and CI only.
+# Start it with `pnpm dev:up` inside the WSL distro (docs/runbooks/compose-dev-stack.md); it builds
+# the images, generates .env secrets and passes images.env (digest pins) and .env to Compose.
+name: adlc
+
+x-platform: &platform
+  image: adlc-platform:dev
+  restart: unless-stopped
+  networks: [adlc]
+  read_only: true
+  tmpfs: [/tmp]
+  cap_drop: [ALL]
+  security_opt: ["no-new-privileges:true"]
+  depends_on:
+    migrate: { condition: service_completed_successfully }
+
+x-app-db: &app-db
+  # Services connect as adlc_app (no UPDATE/DELETE/TRUNCATE on write-once tables) through the `db`
+  # alias, which the failover drill moves to the promoted replica (AT-P0-06).
+  DATABASE_URL: postgres://adlc_app:${APP_DB_PASSWORD:?}@db:5432/adlc
+
+x-health: &health
+  interval: 5s
+  timeout: 3s
+  retries: 30
+
+services:
+  pg-primary:
+    image: ${POSTGRES_IMAGE:?}
+    restart: unless-stopped
+    command: [postgres, -c, wal_level=replica, -c, max_wal_senders=5, -c, wal_keep_size=256MB]
+    environment:
+      POSTGRES_USER: adlc_owner
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?}
+      POSTGRES_DB: adlc
+      REPLICATION_PASSWORD: ${REPLICATION_PASSWORD:?}
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD:?}
+    volumes:
+      - pg-primary:/var/lib/postgresql/data
+      - ./postgres/primary-init.sh:/docker-entrypoint-initdb.d/10-roles.sh:ro
+    networks:
+      adlc: { aliases: [db] }
+    healthcheck: { <<: *health, test: [CMD, pg_isready, -U, adlc_owner, -d, adlc] }
+
+  pg-replica:
+    image: ${POSTGRES_IMAGE:?}
+    restart: unless-stopped
+    entrypoint: [bash, /scripts/replica-entrypoint.sh]
+    environment:
+      REPLICATION_PASSWORD: ${REPLICATION_PASSWORD:?}
+      PRIMARY_HOST: pg-primary
+    volumes:
+      - pg-replica:/var/lib/postgresql/data
+      - ./postgres/replica-entrypoint.sh:/scripts/replica-entrypoint.sh:ro
+    networks: [adlc]
+    depends_on:
+      pg-primary: { condition: service_healthy }
+    healthcheck: { <<: *health, test: [CMD, pg_isready, -U, adlc_owner, -d, adlc] }
+
+  migrate:
+    <<: *platform
+    restart: "no"
+    depends_on:
+      pg-primary: { condition: service_healthy }
+    command: [sh, -c, "node packages/db/dist/migrate-cli.js && node apps/dev-fakes/dist/seed-cli.js"]
+    environment:
+      DATABASE_URL: postgres://adlc_owner:${POSTGRES_PASSWORD:?}@db:5432/adlc
+      APP_DB_ROLE: adlc_app
+      DEV_PROJECT_KEY: PILOT
+      DEV_REPO: org/product
+
+  dev-fakes:
+    <<: *platform
+    depends_on: {}
+    command: [node, apps/dev-fakes/dist/main.js]
+    environment:
+      FAKES_TOKEN: ${FAKES_TOKEN:?}
+      SEED_REPOS: org/product
+    ports: ["127.0.0.1:4000:4000"]
+    healthcheck: { <<: *health, test: [CMD, node, -e, "fetch('http://localhost:4000/health').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"] }
+
+  gateway:
+    <<: *platform
+    command: [node, apps/gateway/dist/main.js]
+    environment:
+      <<: *app-db
+      ADAPTERS: dev-fakes
+      FAKES_URL: http://dev-fakes:4000
+      FAKES_TOKEN: ${FAKES_TOKEN:?}
+      AGENTS_DIR: /app/agents
+    # The only service on the internal agent network: the agents' whole allow-list (ADR-0011).
+    networks: [adlc, agents]
+    healthcheck: { <<: *health, test: [CMD, node, -e, "fetch('http://localhost:3001/health').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"] }
+
+  orchestrator-a: &orchestrator
+    <<: *platform
+    command: [node, apps/orchestrator/dist/main.js]
+    # Executor host (ADR-0014): uid 0 inside a rootless daemon is the unprivileged host user that
+    # owns the socket. No capabilities. Agent containers never get the socket (hard rule 6).
+    user: "0:0"
+    volumes:
+      - ${DOCKER_SOCKET:?}:/var/run/docker.sock
+    environment:
+      <<: *app-db
+      ADAPTERS: dev-fakes
+      FAKES_URL: http://dev-fakes:4000
+      FAKES_TOKEN: ${FAKES_TOKEN:?}
+      DISPATCH_ROLE: dummy
+      AGENT_IMAGE: ${AGENT_IMAGE:?run pnpm dev:up to build the agent image}
+      AGENT_GATEWAY_URL: http://gateway:3001
+      AGENT_NETWORK: adlc-agents
+      EXECUTOR_SLOTS: ${EXECUTOR_SLOTS:-8}
+      SANDBOX_SLOTS: "2"
+      DISPATCH_INTERVAL_MS: "2000"
+      SUPERVISE_INTERVAL_MS: "2000"
+      INTERNAL_API_TOKEN: ${INTERNAL_API_TOKEN:?}
+    ports: ["127.0.0.1:3100:3000"]
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      gateway: { condition: service_healthy }
+    healthcheck: { <<: *health, test: [CMD, node, -e, "fetch('http://localhost:3000/ready').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"] }
+
+  # Second replica: same image and config; the PostgreSQL advisory lock makes one of them leader.
+  orchestrator-b:
+    <<: *orchestrator
+    ports: ["127.0.0.1:3101:3000"]
+
+  notifier:
+    <<: *platform
+    command: [node, apps/notifier/dist/main.js]
+    environment:
+      <<: *app-db
+      SMTP_URL: smtp://mailpit:1025
+      MAIL_FROM: adlc-notifier@example.invalid
+      PORTAL_URL: http://localhost:8081
+      ROTA_FILE: /app/config/rota.yaml
+      CALENDAR_FILE: /app/config/working-calendar.yaml
+      TICK_MS: "5000"
+
+  portal-api:
+    <<: *platform
+    command: [node, apps/portal-api/dist/main.js]
+    environment:
+      <<: *app-db
+      OIDC_ISSUER: http://localhost:8080/realms/adlc
+      OIDC_JWKS_URL: http://keycloak:8080/realms/adlc/protocol/openid-connect/certs
+      ORCHESTRATOR_URLS: http://orchestrator-a:3000,http://orchestrator-b:3000
+      INTERNAL_API_TOKEN: ${INTERNAL_API_TOKEN:?}
+    ports: ["127.0.0.1:3002:3002"]
+    healthcheck: { <<: *health, test: [CMD, node, -e, "fetch('http://localhost:3002/api/health').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"] }
+
+  portal-web:
+    image: adlc-portal-web:dev
+    restart: unless-stopped
+    read_only: true
+    tmpfs: [/tmp]
+    networks: [adlc]
+    ports: ["127.0.0.1:8081:8080"]
+    depends_on:
+      portal-api: { condition: service_healthy }
+
+  keycloak:
+    image: ${KEYCLOAK_IMAGE:?}
+    restart: unless-stopped
+    command: [start-dev, --import-realm, --http-port=8080]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?}
+      # Tokens carry the issuer browsers use; services fetch keys over the Compose network.
+      KC_HOSTNAME: http://localhost:8080
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
+      KC_HEALTH_ENABLED: "true"
+      ADLC_DEV_USER_PASSWORD: ${ADLC_DEV_USER_PASSWORD:?}
+    volumes:
+      - ./keycloak/realm-adlc.json:/opt/keycloak/data/import/realm-adlc.json:ro
+    networks: [adlc]
+    ports: ["127.0.0.1:8080:8080"]
+
+  mailpit:
+    image: ${MAILPIT_IMAGE:?}
+    restart: unless-stopped
+    networks: [adlc]
+    ports: ["127.0.0.1:8025:8025"]
+
+  seaweedfs:
+    image: ${SEAWEEDFS_IMAGE:?}
+    restart: unless-stopped
+    command: [server, -dir=/data, -s3, -s3.port=8333]
+    volumes:
+      - seaweedfs:/data
+    networks: [adlc]
+    ports: ["127.0.0.1:8333:8333"]
+
+networks:
+  adlc: {}
+  agents:
+    # Created internal (no route out); the executor refuses a non-internal network (ADR-0011).
+    name: adlc-agents
+    internal: true
+
+volumes:
+  pg-primary: {}
+  pg-replica: {}
+  seaweedfs: {}

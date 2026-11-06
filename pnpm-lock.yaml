@@ -114,6 +114,9 @@ importers:
       '@adlc/testing':
         specifier: workspace:*
         version: link:../../packages/testing
+      pg:
+        specifier: 8.16.3
+        version: 8.16.3
       zod:
         specifier: 4.1.12
         version: 4.1.12
@@ -121,9 +124,15 @@ importers:
       '@adlc/adapters':
         specifier: workspace:*
         version: link:../../packages/adapters
+      '@adlc/db':
+        specifier: workspace:*
+        version: link:../../packages/db
       '@types/node':
         specifier: 22.18.12
         version: 22.18.12
+      '@types/pg':
+        specifier: 8.15.5
+        version: 8.15.5
 
   apps/gateway:
     dependencies:

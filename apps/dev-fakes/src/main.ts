@@ -10,12 +10,17 @@ const env = z
   .object({
     PORT: z.coerce.number().int().min(0).max(65535).default(4000),
     FAKES_TOKEN: z.string().min(16),
+    /** Repositories created on start with a README on main, comma-separated. */
+    SEED_REPOS: z.string().default(""),
     LOG_LEVEL: z.string().default("info"),
   })
   .parse(process.env);
 
 const logger = createLogger("dev-fakes", { level: env.LOG_LEVEL });
-const { server } = createFakesServer({ token: env.FAKES_TOKEN });
+const { server, scm } = createFakesServer({ token: env.FAKES_TOKEN });
+for (const repo of env.SEED_REPOS.split(",").map((r) => r.trim()).filter(Boolean)) {
+  scm.seedRepo(repo, { "README.md": `# ${repo}\n\nFake repository (dev-fakes).\n` });
+}
 server.listen(env.PORT, () => {
   logger.info({ port: env.PORT }, "dev-fakes listening (fake Jira and GitHub, in memory)");
 });
