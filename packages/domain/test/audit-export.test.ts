@@ -126,6 +126,8 @@ describe("NFR-006 WORM audit export: database cross-check", () => {
     expect(compareWithDatabase(exported, [a, c])).toEqual([{ kind: "database-diverges", seq: 2, reason: "missing" }]);
     const rewritten = chainAuditEvent({ ...content("b2") }, 2, new Date(b.ts), a.hash);
     expect(compareWithDatabase(exported, [a, rewritten, c])).toEqual([{ kind: "database-diverges", seq: 2, reason: "changed" }]);
+    // Edited content with the stored hash column left as it was.
+    expect(compareWithDatabase(exported, [a, { ...b, reason: "edited" }, c])).toEqual([{ kind: "database-diverges", seq: 2, reason: "changed" }]);
     const inserted = { ...b, seq: 99 };
     expect(compareWithDatabase(exported, [a, b, c, inserted]).map((f) => f.kind)).toEqual(["database-diverges"]);
   });

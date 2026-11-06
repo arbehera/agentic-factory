@@ -1,4 +1,4 @@
-import { GENESIS_HASH, stateHash, verifyAuditChain, type ChainedAuditEvent } from "./audit.js";
+import { computeAuditHash, GENESIS_HASH, stateHash, verifyAuditChain, type ChainedAuditEvent } from "./audit.js";
 import { DomainError } from "./errors.js";
 
 /**
@@ -178,7 +178,8 @@ export function compareWithDatabase(exported: readonly ChainedAuditEvent[], data
     seen.add(e.seq);
     const d = db.get(e.seq);
     if (!d) findings.push({ kind: "database-diverges", seq: e.seq, reason: "missing" });
-    else if (d.hash !== e.hash || d.prevHash !== e.prevHash) findings.push({ kind: "database-diverges", seq: e.seq, reason: "changed" });
+    // Recompute from the row's content: an edit that left the stored hash column alone counts too.
+    else if (computeAuditHash(d) !== e.hash || d.prevHash !== e.prevHash) findings.push({ kind: "database-diverges", seq: e.seq, reason: "changed" });
   }
   for (const d of database) if (!seen.has(d.seq)) findings.push({ kind: "database-diverges", seq: d.seq, reason: "extra" });
   return findings;
