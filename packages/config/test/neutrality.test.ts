@@ -77,6 +77,7 @@ describe("FR-PCK-005 core-neutrality check", () => {
 
   it("FR-PCK-005 skips build output, dependencies and binary files", async () => {
     await write(tmp, "packages/a/dist/x.js", "gcc\n");
+    await write(tmp, "apps/a/dist-bundle/agent.mjs", "gcc\n");
     await write(tmp, "packages/a/node_modules/m/x.js", "gcc\n");
     await write(tmp, "packages/a/src/blob.bin", Buffer.from([0x67, 0x63, 0x63, 0x00]));
     expect(await checkNeutrality(tmp)).toEqual([]);

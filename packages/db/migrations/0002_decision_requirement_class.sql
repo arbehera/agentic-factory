@@ -1,0 +1,2 @@
+ALTER TABLE "decision" DROP CONSTRAINT "decision_class_chk";--> statement-breakpoint
+ALTER TABLE "decision" ADD CONSTRAINT "decision_class_chk" CHECK ("decision"."class" in ('clarification', 'consult', 'escalation', 'risk', 'requirement', 'gate'));

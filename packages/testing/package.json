@@ -1,0 +1,34 @@
+{
+  "name": "@adlc/testing",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./postgres-global-setup": {
+      "types": "./dist/postgres-global-setup.d.ts",
+      "default": "./dist/postgres-global-setup.js"
+    },
+    "./fakes": {
+      "types": "./dist/fakes.d.ts",
+      "default": "./dist/fakes.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@adlc/adapters": "workspace:*",
+    "@adlc/executor": "workspace:*",
+    "@testcontainers/postgresql": "11.7.1",
+    "pg": "8.16.3",
+    "vitest": "3.2.6"
+  },
+  "devDependencies": {
+    "@types/pg": "8.15.5"
+  }
+}

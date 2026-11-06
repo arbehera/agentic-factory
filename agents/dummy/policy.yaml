@@ -1,0 +1,17 @@
+# Tool policy for the Phase 0 "dummy agent" (P0-WP4): it edits one file and opens a PR.
+# Enforced by the gateway (SDD §11.2); changes go through review like any code.
+role: dummy
+tools:
+  - jira.read_issue
+  - jira.comment
+  - github.read_file
+  - github.get_branch
+  - github.create_branch
+  - github.commit_files
+  - github.open_pull_request
+  - github.check_status
+  - decisions.raise
+  - decisions.read
+github:
+  branches: ["task/{taskKey}"]
+  writePaths: ["docs/dummy/**"]

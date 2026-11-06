@@ -1,0 +1,52 @@
+Jira desired state for AGENSDLC at https://pioneerindia.atlassian.net
+  service accounts (no Administer Projects, no workflow edit): adlc-orchestrator, adlc-agent
+  issue types: Epic, Story, Task, Bug, Change Request, Decision, Risk, Nonconformance, Gate
+  custom fields:
+    specRef (text)
+    requirement IDs (labels)
+    component (text)
+    complexity (select: S/M/L)
+    flags (labels)
+    agent role (text)
+    agent version (text)
+    model tier (select: A/B)
+    lease expiry (datetime)
+    tokens used (number)
+    Decision ID (text)
+    External ID (text)
+  task workflow (Task, Bug): Draft, Needs Clarification, To Do, In Progress, In Review, Awaiting Approval, Done, Blocked, Needs Human
+    Draft -> Needs Clarification
+    Draft -> To Do
+    Needs Clarification -> To Do
+    To Do -> In Progress
+    To Do -> Needs Clarification
+    In Progress -> In Review
+    In Progress -> To Do
+    In Progress -> Blocked
+    In Progress -> Needs Human
+    In Review -> In Progress
+    In Review -> Awaiting Approval
+    In Review -> To Do
+    In Review -> Blocked
+    In Review -> Needs Human
+    Awaiting Approval -> Done   [user = adlc-orchestrator]
+    Awaiting Approval -> To Do
+    Blocked -> To Do
+    Needs Human -> To Do
+  gate workflow (Gate): Open, Ready for Approval, Approved, Rejected
+    Open -> Ready for Approval
+    Ready for Approval -> Approved   [user in group adlc-approvers-<gate>; user not in (adlc-orchestrator, adlc-agent); comment required]
+    Ready for Approval -> Rejected   [user in group adlc-approvers-<gate>; user not in (adlc-orchestrator, adlc-agent); comment required]
+  approver groups (members added by humans only; two approvers where noted):
+    adlc-approvers-G0
+    adlc-approvers-G1  (two-key: 2 distinct approvers, enforced by the orchestrator)
+    adlc-approvers-G2  (two-key: 2 distinct approvers, enforced by the orchestrator)
+    adlc-approvers-G3  (two-key: 2 distinct approvers, enforced by the orchestrator)
+    adlc-approvers-G4  (two-key: 2 distinct approvers, enforced by the orchestrator)
+    adlc-approvers-G5
+    adlc-approvers-G6
+    adlc-approvers-G-CR
+    adlc-approvers-G2Δ
+    adlc-approvers-G3Δ
+    adlc-approvers-G4Δ
+Live drift check and apply arrive with sandbox access (Q-04, ADR-0016).

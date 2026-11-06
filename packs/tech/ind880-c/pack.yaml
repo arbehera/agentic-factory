@@ -1,0 +1,36 @@
+# ind880-c reference technology pack (SDD Appendix F). Status: Draft — registered in the pack
+# registry, sandbox use only (FR-PCK-003). Values come from SDD F.1; open items are noted inline.
+id: ind880-c
+version: 0.1.0
+languages: [C]
+codingStandard: "MISRA C:2012 (incl. amendments) / MISRA C:2023; Pioneer secure-coding rules"
+image:
+  name: adlc-toolchain-ind880
+  digest: null            # set when the image is built and signed (OPEN-23); required for Qualified
+adapters:                 # implemented in P3-WP7 (build, analysis) and P4-WP1/P4-WP3 (target, release)
+  build: adapters/build.ts
+  analysis: adapters/analysis.ts        # OPEN-03: cppcheck/clang-tidy stub, results "baseline only"
+  testTarget: adapters/test-target.ts   # OPEN-05: simulated adapter in dev/sandbox
+  release: adapters/release.ts
+budgetSchema:
+  fields:
+    - { name: ramBytes, unit: bytes, automated: true }
+    - { name: flashBytes, unit: bytes, automated: true }
+    - { name: worstCaseStackBytes, unit: bytes, automated: true }
+    - { name: cpuLoadPercent, unit: percent, automated: false }      # nightly suite
+    - { name: taskIsrTimingMicros, unit: microseconds, automated: false }  # nightly suite
+dodThresholds:
+  coverage: { statement: 90, branch: 80 }
+  complexity: 15
+humanLedCategories: [BSP, ISR, DMA, boot, RTOS configuration, secure boot, crypto, update, key handling]
+humanExecutedVerification:
+  - Optics and image quality
+  - Environmental
+  - EMC
+  - Vehicle-network conformance
+  - Physical HW measurements
+templateFragments: [fragments/budgets.md, fragments/timing.md, fragments/hw-sw-interface.md]
+skills: [skills/c-rtos-idioms.md, skills/platform-notes.md, skills/misra-guide.md, skills/hil-harness.md]
+evals:
+  goldenTasks: evals/golden/       # OPEN-10: seeded from a completed human-built project
+  canaryCorpus: evals/canaries/

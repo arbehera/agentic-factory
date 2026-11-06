@@ -1,0 +1,31 @@
+{
+  "name": "@adlc/db",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "tsx src/migrate-cli.ts"
+  },
+  "dependencies": {
+    "@adlc/domain": "workspace:*",
+    "@adlc/schemas": "workspace:*",
+    "drizzle-orm": "0.44.7",
+    "pg": "8.16.3"
+  },
+  "devDependencies": {
+    "@adlc/testing": "workspace:*",
+    "@types/pg": "8.15.5",
+    "drizzle-kit": "0.31.5"
+  }
+}

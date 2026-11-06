@@ -2,7 +2,7 @@
 import tseslint from "typescript-eslint";
 
 export default tseslint.config(
-  { ignores: ["**/dist/**", "**/coverage/**", "**/node_modules/**", "**/.turbo/**"] },
+  { ignores: ["**/dist/**", "**/dist-bundle/**", "**/coverage/**", "**/node_modules/**", "**/.turbo/**"] },
   ...tseslint.configs.strictTypeChecked,
   {
     languageOptions: {
@@ -13,6 +13,8 @@ export default tseslint.config(
       "@typescript-eslint/no-explicit-any": "error",
       "@typescript-eslint/no-non-null-assertion": "error",
       "@typescript-eslint/restrict-template-expressions": ["error", { allowNumber: true }],
+      // Interface parameters an implementation does not need are prefixed with `_`.
+      "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_" }],
     },
   },
   { files: ["**/*.mjs", "**/*.js"], ...tseslint.configs.disableTypeChecked },

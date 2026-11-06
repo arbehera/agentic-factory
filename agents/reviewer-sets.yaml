@@ -1,0 +1,4 @@
+# Required reviewer set per author role (SDD §8.5 S6, FR-EVD-002 a). The signer signs only when
+# every listed reviewer role approved the exact PR head. Real roles arrive in P3-WP2.
+sets:
+  dummy: [dummy-reviewer]

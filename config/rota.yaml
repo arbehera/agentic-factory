@@ -1,0 +1,8 @@
+# Notification rota (SDD §16.3, FR-NOT-002). PLACEHOLDERS ONLY: the real on-duty rota, backups,
+# approver groups and Program Lead come from Pioneer (OPEN-06, OPEN-21). Order = escalation order.
+programLead: program-lead@example.invalid
+roleOwners:
+  dummy: [dummy-owner-onduty@example.invalid, dummy-owner-backup@example.invalid]
+  dummy-reviewer: [dummy-owner-onduty@example.invalid, dummy-owner-backup@example.invalid]
+gateApprovers:
+  G5: [g5-approver-onduty@example.invalid, g5-approver-backup@example.invalid]

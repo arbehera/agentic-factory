@@ -8,21 +8,30 @@
   },
   "scripts": {
     "build": "turbo run build",
-    "lint": "eslint .",
+    "lint": "turbo run build --output-logs=errors-only && eslint .",
     "typecheck": "turbo run typecheck",
-    "test": "turbo run test",
-    "test:coverage": "turbo run test:coverage",
+    "test": "turbo run test --concurrency=4",
+    "test:coverage": "turbo run test:coverage --concurrency=4",
     "check:neutrality": "tsx packages/config/src/cli.ts",
-    "verify": "pnpm lint && pnpm typecheck && pnpm test:coverage && pnpm check:neutrality"
+    "verify": "pnpm lint && pnpm typecheck && pnpm test:coverage && pnpm check:neutrality",
+    "db:migrate": "pnpm --filter @adlc/db run build && pnpm --filter @adlc/db run db:migrate",
+    "dev:up": "bash scripts/dev/dev-up.sh",
+    "dev:down": "bash scripts/dev/dev-down.sh",
+    "test:load": "bash scripts/dev/load-test.sh",
+    "test:failover": "bash scripts/dev/failover-drill.sh",
+    "test:e2e": "bash scripts/dev/e2e.sh",
+    "audit:verify": "bash scripts/dev/audit-verify.sh",
+    "config:sync": "tsx apps/config-sync/src/cli.ts"
   },
   "devDependencies": {
     "@types/node": "22.18.12",
-    "@vitest/coverage-v8": "3.2.4",
+    "@vitest/coverage-v8": "3.2.6",
     "eslint": "9.38.0",
+    "fast-check": "4.3.0",
     "tsx": "4.20.6",
     "turbo": "2.11.10",
     "typescript": "5.9.3",
     "typescript-eslint": "8.46.2",
-    "vitest": "5.1.0"
+    "vitest": "3.2.6"
   }
 }

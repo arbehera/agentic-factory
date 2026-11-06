@@ -1,0 +1,26 @@
+{
+  "name": "@adlc/schemas",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "gen:json-schema": "tsx src/gen-json-schema.ts"
+  },
+  "dependencies": {
+    "@adlc/domain": "workspace:*",
+    "zod": "4.1.12"
+  },
+  "devDependencies": {
+    "yaml": "2.8.1"
+  }
+}

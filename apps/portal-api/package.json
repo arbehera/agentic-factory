@@ -1,0 +1,36 @@
+{
+  "name": "@adlc/portal-api",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage"
+  },
+  "dependencies": {
+    "@adlc/control-plane": "workspace:*",
+    "@adlc/db": "workspace:*",
+    "@adlc/domain": "workspace:*",
+    "@adlc/executor": "workspace:*",
+    "@adlc/telemetry": "workspace:*",
+    "@nestjs/common": "11.1.6",
+    "@nestjs/core": "11.1.6",
+    "@nestjs/platform-express": "11.1.6",
+    "jose": "5.9.6",
+    "reflect-metadata": "0.2.2",
+    "rxjs": "7.8.2",
+    "zod": "4.1.12"
+  },
+  "devDependencies": {
+    "@adlc/testing": "workspace:*",
+    "@types/node": "22.18.12"
+  }
+}

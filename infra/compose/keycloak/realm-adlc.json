@@ -1,0 +1,44 @@
+{
+  "realm": "adlc",
+  "displayName": "ADLC (dev only)",
+  "enabled": true,
+  "sslRequired": "none",
+  "registrationAllowed": false,
+  "roles": {
+    "realm": [
+      { "name": "viewer" },
+      { "name": "operator" },
+      { "name": "role-owner" },
+      { "name": "pack-owner" },
+      { "name": "lead" },
+      { "name": "platform-admin" },
+      { "name": "auditor" }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "adlc-portal",
+      "name": "Agent Operations Portal (dev)",
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "redirectUris": ["http://localhost:8081/*", "http://localhost:5173/*", "http://portal-web:8080/*"],
+      "webOrigins": ["http://localhost:8081", "http://localhost:5173", "http://portal-web:8080"],
+      "attributes": { "pkce.code.challenge.method": "S256", "post.logout.redirect.uris": "http://localhost:8081/*" },
+      "protocolMappers": [
+        {
+          "name": "portal-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "config": { "included.client.audience": "adlc-portal", "access.token.claim": "true", "id.token.claim": "false" }
+        }
+      ]
+    }
+  ],
+  "users": [
+    { "username": "program-lead", "email": "program-lead@example.invalid", "emailVerified": true, "enabled": true, "firstName": "Program", "lastName": "Placeholder", "realmRoles": ["lead", "viewer"], "credentials": [{ "type": "password", "value": "${ADLC_DEV_USER_PASSWORD}", "temporary": false }] },
+    { "username": "platform-admin", "email": "platform-admin@example.invalid", "emailVerified": true, "enabled": true, "firstName": "Platform", "lastName": "Placeholder", "realmRoles": ["platform-admin", "operator", "viewer"], "credentials": [{ "type": "password", "value": "${ADLC_DEV_USER_PASSWORD}", "temporary": false }] },
+    { "username": "dummy-owner-onduty", "email": "dummy-owner-onduty@example.invalid", "emailVerified": true, "enabled": true, "firstName": "Dummy Owner", "lastName": "Placeholder", "realmRoles": ["role-owner", "operator", "viewer"], "credentials": [{ "type": "password", "value": "${ADLC_DEV_USER_PASSWORD}", "temporary": false }] },
+    { "username": "viewer", "email": "viewer@example.invalid", "emailVerified": true, "enabled": true, "firstName": "Read-only", "lastName": "Placeholder", "realmRoles": ["viewer"], "credentials": [{ "type": "password", "value": "${ADLC_DEV_USER_PASSWORD}", "temporary": false }] }
+  ]
+}
