@@ -20,7 +20,7 @@
   "dependencies": {
     "@adlc/domain": "workspace:*",
     "@adlc/schemas": "workspace:*",
-    "drizzle-orm": "0.44.7",
+    "drizzle-orm": "0.45.2",
     "pg": "8.16.3"
   },
   "devDependencies": {

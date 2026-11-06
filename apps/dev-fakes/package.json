@@ -20,7 +20,7 @@
     "@adlc/telemetry": "workspace:*",
     "@adlc/testing": "workspace:*",
     "pg": "8.16.3",
-    "zod": "4.1.12"
+    "zod": "4.6.6"
   },
   "devDependencies": {
     "@adlc/adapters": "workspace:*",
