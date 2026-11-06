@@ -1,0 +1,45 @@
+# Core-neutrality deny-list (FR-PCK-005). Reviewed with every change (see ADR-0003).
+# One term per line; matched case-insensitively as a whole token in files under apps/ and packages/.
+# Platform infrastructure named by spec.md §4 (container engine, issue tracker, source control,
+# CI server, identity provider, database) is part of the core and is NOT listed here.
+# Product technology (target OS, hardware platform, language toolchain, analysis/debug tool) is.
+
+# Hardware platforms and silicon vendors
+ind880
+indie
+cortex-m
+stm32
+esp32
+nrf52
+
+# Embedded operating systems and RTOS stacks
+freertos
+zephyr
+threadx
+autosar
+
+# Language toolchains and build tools for product code
+gcc
+arm-none-eabi
+clang
+clang-tidy
+cmake
+keil
+iar
+
+# Static analysers and coding-standard tools
+misra
+cppcheck
+polyspace
+helix qac
+coverity
+pc-lint
+
+# Debug probes and target tools
+lauterbach
+trace32
+segger
+openocd
+
+# Technology-pack identifiers
+cloud-ts

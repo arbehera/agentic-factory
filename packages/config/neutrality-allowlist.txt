@@ -1,0 +1,4 @@
+# Paths (globs, relative to the repo root) exempt from the core-neutrality check (FR-PCK-005).
+# Only tests and test fixtures may be listed (spec.md §8.5).
+**/*.test.ts
+**/test/fixtures/**
