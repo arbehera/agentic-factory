@@ -10,5 +10,12 @@ export default defineConfig({
   timeout: 120_000,
   retries: 0,
   reporter: [["list"]],
-  use: { baseURL: process.env.PORTAL_URL ?? "http://portal-web:8080", trace: "retain-on-failure", screenshot: "only-on-failure" },
+  use: {
+    baseURL: process.env.PORTAL_URL ?? "http://portal-web:8080",
+    trace: "retain-on-failure",
+    screenshot: "only-on-failure",
+    // Sign-in uses PKCE, which needs crypto.subtle, which browsers give only to secure origins.
+    // localhost is one (people use http://localhost:8081); the test's in-network origin is not.
+    launchOptions: { args: ["--unsafely-treat-insecure-origin-as-secure=http://portal-web:8080"] },
+  },
 });
