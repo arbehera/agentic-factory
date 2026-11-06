@@ -1,0 +1,10 @@
+GitHub plan for arbehera/factory-sample
+  + create main with .github/CODEOWNERS
+  + ruleset adlc-main (branch; rules: deletion, non_fast_forward, pull_request, required_status_checks; bypass: none)
+  + ruleset adlc-agent-branches (branch; rules: deletion, non_fast_forward; bypass: none)
+  + ruleset adlc-other-branches (branch; rules: creation, update, deletion, non_fast_forward; bypass: repository admin)
+  + ruleset adlc-tags (tag; rules: creation, update, deletion; bypass: repository admin)
+  BLOCKER: main requires a merge queue (FR-GH-001), but GitHub offers merge queues only on organization-owned repositories (OPEN-14). Decide: move the repository into an organization, or accept main without a merge queue in the sandbox and record the deviation.
+  BLOCKER: the CI App ID is unknown (ADLC_CI_APP_ID): required checks would accept a status from any identity
+  note: adlc/paths is required by FR-GH-001 but not posted until P3-WP3 (FR-GH-002); it is not required yet
+  note: adlc/gate is required by FR-GH-001 but not posted until P1-WP2 (FR-GH-003), spec baseline PRs; it is not required yet

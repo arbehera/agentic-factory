@@ -94,6 +94,7 @@ export * from "./json-schema.js";
 export * from "./tasks-import.js";
 export * from "./packs.js";
 export * from "./reviewer-sets.js";
+export * from "./platform-config.js";
 export * from "./rota.js";
 export * from "./working-calendar.js";
 export * from "./role-policy.js";

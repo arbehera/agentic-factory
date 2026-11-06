@@ -5,6 +5,7 @@ import { rolePolicySchema } from "./role-policy.js";
 import { rotaSchema } from "./rota.js";
 import { workingCalendarSchema } from "./working-calendar.js";
 import { tasksImportFileSchema } from "./tasks-import.js";
+import { githubRepoConfigSchema, jiraProjectConfigSchema } from "./platform-config.js";
 
 /**
  * JSON Schemas exported for file contracts (CLAUDE.md §6), written to `packages/schemas/json-schema/`
@@ -20,6 +21,8 @@ export function jsonSchemas(): Record<string, unknown> {
     "reviewer-sets.schema.json": z.toJSONSchema(reviewerSetsSchema),
     "rota.schema.json": z.toJSONSchema(rotaSchema, { io: "input" }),
     "working-calendar.schema.json": z.toJSONSchema(workingCalendarSchema, { io: "input" }),
+    "github-repo-config.schema.json": z.toJSONSchema(githubRepoConfigSchema, { io: "input" }),
+    "jira-project-config.schema.json": z.toJSONSchema(jiraProjectConfigSchema, { io: "input" }),
   };
 }
 

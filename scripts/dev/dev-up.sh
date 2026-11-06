@@ -27,7 +27,7 @@ set +a
 (
   umask 077
   touch "$env_file"
-  for key in POSTGRES_PASSWORD REPLICATION_PASSWORD APP_DB_PASSWORD FAKES_TOKEN INTERNAL_API_TOKEN KEYCLOAK_ADMIN_PASSWORD ADLC_DEV_USER_PASSWORD MODEL_API_KEY OBJECT_STORE_ADMIN_SECRET OBJECT_STORE_EXPORTER_SECRET; do
+  for key in POSTGRES_PASSWORD REPLICATION_PASSWORD APP_DB_PASSWORD FAKES_TOKEN INTERNAL_API_TOKEN KEYCLOAK_ADMIN_PASSWORD ADLC_DEV_USER_PASSWORD MODEL_API_KEY OBJECT_STORE_ADMIN_SECRET OBJECT_STORE_EXPORTER_SECRET JENKINS_ADMIN_PASSWORD; do
     grep -q "^$key=" "$env_file" || { echo "$key=$(openssl rand -hex 24)" >>"$env_file"; echo "dev-up: generated $key in $env_file"; }
   done
   # Dev-only retention of exported audit objects; the real period is an ISMS decision (ADR-0015).
@@ -48,6 +48,11 @@ for target in platform portal-web; do
     --target "$target" -t "adlc-$target:dev" . >/dev/null
 done
 
+if [[ ",${COMPOSE_PROFILES:-}," == *",ci,"* ]]; then
+  echo "dev-up: building the Jenkins controller image (profile ci)"
+  docker build -q --build-arg "JENKINS_IMAGE=$JENKINS_IMAGE" -t adlc-jenkins:dev infra/jenkins >/dev/null
+fi
+
 echo "dev-up: starting the stack (agent image $AGENT_IMAGE)"
 AGENT_IMAGE="$AGENT_IMAGE" DOCKER_SOCKET="$socket" EXECUTOR_SLOTS="${EXECUTOR_SLOTS:-8}" \
   docker compose -f "$compose_dir/compose.yaml" --env-file "$compose_dir/images.env" --env-file "$env_file" up -d --wait --remove-orphans
@@ -57,4 +62,5 @@ dev-up: ready.
                                        password: ADLC_DEV_USER_PASSWORD in $env_file)
   Keycloak      http://localhost:8080   Mailpit http://localhost:8025   dev-fakes http://localhost:4000
   Orchestrators http://localhost:3100/ready  http://localhost:3101/ready
+  Jenkins       http://localhost:8082  (profile ci only; user admin, password JENKINS_ADMIN_PASSWORD)
 MSG

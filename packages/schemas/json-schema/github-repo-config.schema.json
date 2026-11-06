@@ -1,0 +1,160 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "repo": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9._-]+\\/[A-Za-z0-9._-]+$"
+    },
+    "defaultBranch": {
+      "default": "main",
+      "type": "string",
+      "minLength": 1
+    },
+    "agentBranches": {
+      "minItems": 1,
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9-]*\\/\\*$"
+      }
+    },
+    "main": {
+      "type": "object",
+      "properties": {
+        "mergeQueue": {
+          "type": "object",
+          "properties": {
+            "required": {
+              "type": "boolean"
+            },
+            "groupSize": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "mergeMethod": {
+              "type": "string",
+              "enum": [
+                "MERGE",
+                "SQUASH",
+                "REBASE"
+              ]
+            }
+          },
+          "required": [
+            "required",
+            "groupSize",
+            "mergeMethod"
+          ],
+          "additionalProperties": false
+        },
+        "requiredApprovals": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "codeOwnerReview": {
+          "type": "boolean",
+          "const": true
+        },
+        "dismissStaleApprovals": {
+          "type": "boolean",
+          "const": true
+        },
+        "requireLastPushApproval": {
+          "type": "boolean",
+          "const": true
+        },
+        "requiredStatusChecks": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "context": {
+                "type": "string",
+                "pattern": "^adlc\\/[a-z][a-z0-9-]*$"
+              },
+              "postedBy": {
+                "type": "string",
+                "enum": [
+                  "ci"
+                ]
+              }
+            },
+            "required": [
+              "context",
+              "postedBy"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "pendingStatusChecks": {
+          "default": [],
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "context": {
+                "type": "string",
+                "pattern": "^adlc\\/[a-z][a-z0-9-]*$"
+              },
+              "postedFrom": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "context",
+              "postedFrom"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "mergeQueue",
+        "requiredApprovals",
+        "codeOwnerReview",
+        "dismissStaleApprovals",
+        "requireLastPushApproval",
+        "requiredStatusChecks"
+      ],
+      "additionalProperties": false
+    },
+    "codeowners": {
+      "minItems": 1,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "owners": {
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^@[A-Za-z0-9-]+(?:\\/[A-Za-z0-9-]+)?$"
+            }
+          }
+        },
+        "required": [
+          "path",
+          "owners"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "repo",
+    "agentBranches",
+    "main",
+    "codeowners"
+  ],
+  "additionalProperties": false
+}

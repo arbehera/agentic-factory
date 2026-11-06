@@ -1,0 +1,31 @@
+# Jenkins configuration-as-code (P0-WP6, FR-CI-001, SDD §12.1). Changes go through PR review.
+# Phase 0 controller only: no build or signer agents yet (labels adlc-build / adlc-signer in
+# verify.Jenkinsfile), no GitHub App credential and no job until sandbox credentials exist (Q-04).
+jenkins:
+  systemMessage: "ADLC dev/CI controller, configured as code (infra/jenkins/casc.yaml)."
+  # Nothing runs on the controller: PR code only ever runs on build agents.
+  numExecutors: 0
+  mode: EXCLUSIVE
+  securityRealm:
+    local:
+      allowsSignup: false
+      users:
+        - id: admin
+          password: "${JENKINS_ADMIN_PASSWORD}"
+  authorizationStrategy:
+    globalMatrix:
+      entries:
+        - user:
+            name: admin
+            permissions: ["Overall/Administer"]
+        - group:
+            name: authenticated
+            permissions: ["Overall/Read", "Job/Read"]
+  crumbIssuer:
+    standard:
+      excludeClientIPFromCrumb: false
+  remotingSecurity:
+    enabled: true
+unclassified:
+  location:
+    url: "http://localhost:8082/"

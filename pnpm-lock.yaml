@@ -106,6 +106,22 @@ importers:
         specifier: 0.2.2
         version: 0.2.2
 
+  apps/config-sync:
+    dependencies:
+      '@adlc/domain':
+        specifier: workspace:*
+        version: link:../../packages/domain
+      '@adlc/pack-sdk':
+        specifier: workspace:*
+        version: link:../../packages/pack-sdk
+      '@adlc/schemas':
+        specifier: workspace:*
+        version: link:../../packages/schemas
+    devDependencies:
+      '@types/node':
+        specifier: 22.18.12
+        version: 22.18.12
+
   apps/dev-fakes:
     dependencies:
       '@adlc/telemetry':

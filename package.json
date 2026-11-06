@@ -20,7 +20,8 @@
     "test:load": "bash scripts/dev/load-test.sh",
     "test:failover": "bash scripts/dev/failover-drill.sh",
     "test:e2e": "bash scripts/dev/e2e.sh",
-    "audit:verify": "bash scripts/dev/audit-verify.sh"
+    "audit:verify": "bash scripts/dev/audit-verify.sh",
+    "config:sync": "tsx apps/config-sync/src/cli.ts"
   },
   "devDependencies": {
     "@types/node": "22.18.12",
