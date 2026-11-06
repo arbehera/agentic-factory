@@ -49,6 +49,7 @@ pnpm dev:down              # stop the stack; `pnpm dev:down --volumes` also dele
 pnpm test:e2e              # AT-P0-01 with fakes + Playwright portal checks/screenshots (requires dev:up)
 pnpm test:load             # AT-P0-05: k6, 20 concurrent dummy runs (requires dev:up)
 pnpm test:failover         # AT-P0-06 drill: primary + leader lost, replica promoted (destructive; requires dev:up)
+pnpm audit:verify          # NFR-006: check the write-once audit/evidence export against itself and the DB (requires dev:up; exit 1 on findings)
 scripts/dev/pin-images.sh  # re-pin the stack's third-party images by digest (infra/compose/images.env)
 ```
 

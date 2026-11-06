@@ -197,7 +197,7 @@ WP11 is the first time the services run as separate processes, so it starts by g
 | 11c | **AT-P0-05:** k6 scenario (`pnpm test:load`) seeds 20 dummy tasks and checks dispatch latency < 30 s, no heartbeat loss and that the portal lists all 20 runs. | AT-P0-05 |
 | 11d | **AT-P0-06:** failover runbook and drill script: stop the primary, promote the replica, re-point the `db` alias, measure RTO; the leader is re-elected and leases resume. | AT-P0-06 |
 | 11e | **AT-P0-01 with fakes:** fake CI posts `adlc/verify`, minimal review trigger + signer posts `adlc/evidence`, a human approves and merges through the dev-fakes admin call, the orchestrator sets Done. Playwright e2e and portal screenshots with Keycloak. | AT-P0-01 (fakes half) |
-| 11f | WORM export of audit and evidence to SeaweedFS (ADR-0006). | NFR audit |
+| 11f | WORM export of audit and evidence to SeaweedFS (ADR-0006, **ADR-0015**). Done: locked segments + evidence, `pnpm audit:verify`. | NFR-006 |
 
 Decisions recorded in ADR-0014. The executor host role means the orchestrator container gets the rootless Docker socket. Agent containers never do (hard rule 6), and Kubernetes replaces this post-pilot.
 
@@ -224,4 +224,11 @@ Decisions recorded in ADR-0014. The executor host role means the orchestrator co
 
 Bugs found by these runs and fixed: services crashing when PostgreSQL closed idle connections; ready-source starvation behind in-flight tasks; Keycloak placeholder names blocked sign-in; fake Jira ignored status clauses; fake model API reused message IDs across restarts; `dev:down` broken and the post-failover stack restartable into two `db` hosts; PKCE sign-in in the test browser.
 Not reproduced: one earlier load run where runs took ~454 s and heartbeats stalled. The next runs (single-run probe and the full load test) showed 5 s heartbeats and on-time completion; most likely a side effect of the fake-search bug, not proven.
+
+**11f write-once export (2026-11-06, same stack):**
+- The orchestrator leader sealed segment 1 (24 events, 1 evidence record) and, after `pnpm test:e2e`, segment 2 (25 events, 1 evidence record). `pnpm audit:verify`: no findings.
+- Tamper drill, both caught (`audit:verify` exit 1): the exporter identity overwrote segment 1 → `object-rewritten` (the locked original is still what gets verified); a superuser edited an exported audit row with triggers off → `database-diverges` (seq 3, changed).
+- Found and fixed: SeaweedFS ran out of volumes (default 8; now sized to the disk); SeaweedFS `ListObjectsV2` returns wrong keys on versioned buckets (keys come from the version listing); a row edit that left the stored hash column alone escaped the first cross-check (rows are now re-hashed); portal-web kept a recreated portal-api's old address (502; nginx now resolves per request).
+- SeaweedFS gaps measured and recorded in ADR-0015: overwrites and deletes are only made visible, not refused; an admin identity can delete a locked bucket (caught through the recorded `audit.export` events); no read-only identity can read the bucket.
+- Question for Pioneer: the retention period of exported objects (ISMS). `AUDIT_EXPORT_RETENTION_DAYS` has no default; dev uses 1 day.
 

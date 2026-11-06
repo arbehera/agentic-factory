@@ -62,3 +62,8 @@ Failed agent containers are kept for diagnosis (ADR-0011). List them with `docke
   - Migrations run as `adlc_owner` in the one-shot `migrate` service, which also applies the dev seed (project `PILOT`, repo `org/product`, the Phase 0 agent definitions).
 - **Executor hosts:** the orchestrators mount the rootless Docker socket and run as uid 0 inside a rootless daemon, which is the unprivileged host user, with no capabilities. Agent containers never get the socket.
 - **Failover:** the replica `pg-replica` streams from `pg-primary`. See [control-plane-failover.md](control-plane-failover.md).
+- **Write-once audit export (NFR-006, ADR-0015):**
+  - The orchestrator leader seals the audit chain and the signed evidence into the locked SeaweedFS bucket `adlc-audit`, daily (`AUDIT_EXPORT_EVERY_MS=60000 pnpm dev:up` exports every minute).
+  - The one-shot `objectstore-init` creates the bucket with the admin identity; services use the `adlc-exporter` identity.
+  - `pnpm audit:verify` checks the export against itself and the database. It exits 1 on any finding.
+  - Objects stay locked for `AUDIT_EXPORT_RETENTION_DAYS` (dev: 1). After a tamper drill the dev store stays flagged until `pnpm dev:down --volumes`.

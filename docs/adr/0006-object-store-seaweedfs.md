@@ -13,5 +13,5 @@ NFR-006 needs object storage for transcripts and logs (retention per ISMS) and f
 SeaweedFS, run as a separate service in Compose (P0-WP11). Platform code talks to it only through an `ObjectStore` interface over the S3 API, so a later move to another S3-compatible store is a configuration change.
 
 ## Consequences
-- **WORM.** S3 Object Lock support in SeaweedFS must be verified when the export is built (WP11). If it is missing, WORM is provided by the anchor chain plus restricted credentials, and that gap is reported.
+- **WORM.** Verified in P0-WP11: SeaweedFS 3.97 Object Lock keeps locked versions, but does not refuse overwrites, delete markers or an admin's bucket deletion. The export compensates with a verifier and the database's record of each export (ADR-0015).
 - **Spec text.** spec.md §9 NFR-006 still reads "e.g. MinIO" and should be updated at the Phase 0 review.
