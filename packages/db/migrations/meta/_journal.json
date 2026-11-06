@@ -22,6 +22,13 @@
       "when": 1793842421457,
       "tag": "0002_decision_requirement_class",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1793848358391,
+      "tag": "0003_pack_version_content_hash",
+      "breakpoints": true
     }
   ]
 }

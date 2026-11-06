@@ -1,15 +1,9 @@
-import { PostgreSqlContainer, type StartedPostgreSqlContainer } from "@testcontainers/postgresql";
 import { formatDecisionId, stateHash, type AuditEventContent } from "@adlc/domain";
 import { sql } from "drizzle-orm";
-import pg from "pg";
+import type pg from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { AuditRepository, createDb, runMigrations, type Db } from "../src/index.js";
-
-/**
- * Integration tests on PostgreSQL 16 (CLAUDE.md §7). They need a Docker daemon. Set
- * ADLC_SKIP_INTEGRATION=1 to skip them explicitly; they are then reported as skipped, never passed.
- */
-const skip = process.env.ADLC_SKIP_INTEGRATION === "1";
+import { AuditRepository, runMigrations, type Db } from "../src/index.js";
+import { freshDatabase, skipIntegration, type TestDatabase } from "./helpers.js";
 
 const event = (n: number, extra: Partial<AuditEventContent> = {}): AuditEventContent => ({
   actor: { kind: "service", id: "adlc-orchestrator" },
@@ -22,18 +16,16 @@ const event = (n: number, extra: Partial<AuditEventContent> = {}): AuditEventCon
   ...extra,
 });
 
-describe.skipIf(skip)("P0-WP2 database (PostgreSQL 16)", () => {
-  let container: StartedPostgreSqlContainer;
+describe.skipIf(skipIntegration)("P0-WP2 database (PostgreSQL 16)", () => {
+  let t: TestDatabase;
   let pool: pg.Pool;
   let db: Db;
   let projectId: string;
 
   beforeAll(async () => {
-    container = await new PostgreSqlContainer("postgres:16-alpine").start();
     // Session time zone deliberately not UTC: storage must be UTC regardless (CLAUDE.md §6).
-    pool = new pg.Pool({ connectionString: container.getConnectionUri(), options: "-c TimeZone=Asia/Kolkata" });
-    db = createDb(pool);
-    await runMigrations(db);
+    t = await freshDatabase({ sessionTimeZone: "Asia/Kolkata" });
+    ({ pool, db } = t);
     const { rows } = await pool.query<{ id: string }>(
       "insert into project (name, jira_project_key, status) values ('p', 'PILOT', 'active') returning id",
     );
@@ -41,8 +33,7 @@ describe.skipIf(skip)("P0-WP2 database (PostgreSQL 16)", () => {
   });
 
   afterAll(async () => {
-    await pool.end();
-    await container.stop();
+    await t.close();
   });
 
   it("creates a table for every spec.md §5 entity, and re-running migrations is a no-op", async () => {

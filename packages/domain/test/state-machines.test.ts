@@ -8,6 +8,7 @@ import {
   DONE_ACTOR_ID,
   gateMachine,
   InvalidTransitionError,
+  packStatusMachine,
   requiredApprovals,
   TASK_STATUSES,
   taskStatusMachine,
@@ -16,7 +17,7 @@ import {
   type TaskStatus,
 } from "../src/index.js";
 
-const machines: StateMachine<string>[] = [taskStatusMachine, agentRunMachine, gateMachine, decisionMachine];
+const machines: StateMachine<string>[] = [taskStatusMachine, agentRunMachine, gateMachine, decisionMachine, packStatusMachine];
 const orchestrator: Actor = { kind: "service", id: DONE_ACTOR_ID };
 
 /** Random walk: at each step pick any target state; apply it only if the machine allows it. */

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { processPackManifestSchema, productProfileSchema, techPackManifestSchema } from "./packs.js";
 import { tasksImportFileSchema } from "./tasks-import.js";
 
 /**
@@ -8,6 +9,9 @@ import { tasksImportFileSchema } from "./tasks-import.js";
 export function jsonSchemas(): Record<string, unknown> {
   return {
     "tasks.import.schema.json": z.toJSONSchema(tasksImportFileSchema),
+    "product-profile.schema.json": z.toJSONSchema(productProfileSchema, { io: "input" }),
+    "tech-pack.schema.json": z.toJSONSchema(techPackManifestSchema),
+    "process-pack.schema.json": z.toJSONSchema(processPackManifestSchema),
   };
 }
 

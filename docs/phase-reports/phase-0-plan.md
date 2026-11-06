@@ -81,6 +81,13 @@ Each WP is one PR (or less). Conventional Commits with `Implements:` / `Tests:` 
 | Q-09 | Scope OK; terms reviewed by the human / Pack Owner | ADR-0003 stays; the deny-list is updated as review comments arrive. |
 | Q-10 | Add a sixth class `requirement` | spec.md §5 updated; domain, schema and DB migration 0002 updated; it never auto-resolves. |
 
+### New questions
+
+| Q | Question | Assumption until answered |
+|---|---|---|
+| Q-11 | A task's `{comp:}` (e.g. `ExposureCtrl`, SDD §3.1.2) names a module, but profile components are coarse (`ecu-firmware`, SDD §5.5), and SDD §5.5 routes "by the paths a task belongs to". How does a task map to its profile component? | `{comp:}` is used when it equals a profile component name; otherwise the task's paths decide, and every path must belong to one component (ADR-0008). |
+| Q-12 | spec.md §5 gives `ProductProfile.version`, but the SDD §5.5 example has no version field. | `metadata.version` (semver) is required in `.adlc/product-profile.yaml`. |
+
 ### Original questions
 
 | Q | Question | Proposed default until answered |
@@ -117,4 +124,12 @@ Notes:
 - Contract test auto-discovers `test/fixtures/speckit-<ver>/` (2 **provisional** fixtures, golden files reviewed).
 - 30 malformed-line cases, each with its line number; ADR-0007.
 - **AT-P0-08 passes against provisional fixtures only.** Real `specify` 1.2.6 output must be added before the phase report (Q-08). |
+| P0-WP8 | done locally on `phase-0/p0-wp8-pack-sdk`:
+- `@adlc/pack-sdk`: §7 interfaces, profile and manifest loaders (strict YAML), task routing.
+- `@adlc/schemas`: profile, tech-pack and process-pack contracts + JSON Schemas.
+- `@adlc/domain`: pack lifecycle (Qualified needs a digest + 2 human approvers; production dispatch only on Qualified).
+- `@adlc/db`: `PackVersionRepository` (immutable versions, audited transitions, X.Y resolution); DB tests share one container.
+- `packs/tech/ind880-c`: Draft manifest + digest-pinned Dockerfile skeleton.
+- ADR-0008.
+- Deferred: adapter contract-test suites (with the first adapter, P0-WP7 / P3-WP7); gate floor FR-PCK-002 (Phase 3). |
 | others | not started |
