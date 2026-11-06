@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
-# Verifies the write-once audit/evidence export against itself and the database (NFR-006,
-# ADR-0015). Read-only. Exits 1 on any finding. Requires `pnpm dev:up`.
+# `pnpm audit:verify`: verifies the write-once audit/evidence export against itself and the
+# database (NFR-006, ADR-0015). Read-only. Exits 1 on any finding. Requires `pnpm dev:up`.
 set -euo pipefail
-compose_dir="$(cd "$(dirname "$0")/../../infra/compose" && pwd)"
-exec docker compose -f "$compose_dir/compose.yaml" --env-file "$compose_dir/images.env" --env-file "$compose_dir/.env" \
-  exec -T orchestrator-a node apps/orchestrator/dist/audit-export-cli.js verify
+cd "$(dirname "$0")/../.."
+export DOCKER_HOST="${DOCKER_HOST:-unix:///run/user/$(id -u)/docker.sock}"
+# exec only interpolates the file; the executor settings are not used by this command.
+AGENT_IMAGE=unused DOCKER_SOCKET=/dev/null docker compose -f infra/compose/compose.yaml --env-file infra/compose/images.env \
+  --env-file infra/compose/.env exec -T orchestrator-a node apps/orchestrator/dist/audit-export-cli.js verify
