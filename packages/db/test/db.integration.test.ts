@@ -36,13 +36,13 @@ describe.skipIf(skipIntegration)("P0-WP2 database (PostgreSQL 16)", () => {
     await t.close();
   });
 
-  it("creates a table for every spec.md §5 entity, and re-running migrations is a no-op", async () => {
+  it("creates a table for every spec.md §5 entity (plus control_flag, ADR-0009), and re-running migrations is a no-op", async () => {
     await runMigrations(db);
     const { rows } = await pool.query<{ t: string }>(
       "select tablename as t from pg_tables where schemaname = 'public' and tablename not like 'audit_event_%'",
     );
     expect(rows.map((r) => r.t).sort()).toEqual([
-      "agent_definition", "agent_run", "audit_event", "budget_ledger", "component_lock", "decision",
+      "agent_definition", "agent_run", "audit_event", "budget_ledger", "component_lock", "control_flag", "decision",
       "evidence_record", "gate", "lease", "notification", "pack_version", "product_profile", "project",
       "step_record", "test_target_lease", "trace_link", "trace_node",
     ]);

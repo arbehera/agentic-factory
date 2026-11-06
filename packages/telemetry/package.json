@@ -1,0 +1,22 @@
+{
+  "name": "@adlc/telemetry",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "pino": "9.9.0"
+  },
+  "devDependencies": {
+    "@types/node": "22.18.12"
+  }
+}

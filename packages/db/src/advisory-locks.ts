@@ -8,3 +8,10 @@ export const ADVISORY_LOCKS = {
   /** Serialises appends to the audit hash chain. */
   auditChain: 7_100_002,
 } as const;
+
+/**
+ * Per-task lease acquisition uses transaction locks keyed by
+ * `hashtextextended('lease:' || taskKey, 0)` (LeaseRepository.acquire). That 64-bit hashed
+ * keyspace is reserved for leases; fixed keys above are small integers.
+ */
+export const LEASE_LOCK_NAMESPACE = "lease:";

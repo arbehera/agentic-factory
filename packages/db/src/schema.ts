@@ -370,3 +370,15 @@ export const testTargetLease = pgTable(
   },
   (t) => [index("test_target_lease_target_idx").on(t.targetId, t.expiresAt)],
 );
+
+/**
+ * Orchestrator-wide switches shared by all replicas, e.g. the kill switch (FR-ORC-012).
+ * Not a spec.md §5 entity: it holds control-plane state only (ADR-0009).
+ */
+export const controlFlag = pgTable("control_flag", {
+  key: text("key").primaryKey(),
+  enabled: boolean("enabled").notNull(),
+  reason: text("reason").notNull(),
+  setBy: text("set_by").notNull(),
+  setAt: ts("set_at").notNull(),
+});

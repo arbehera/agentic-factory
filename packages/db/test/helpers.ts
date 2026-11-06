@@ -1,31 +1,14 @@
-import { randomUUID } from "node:crypto";
-import pg from "pg";
-import { inject } from "vitest";
+import { freshDatabase as fresh, type TestDatabase as Base } from "@adlc/testing";
 import { createDb, runMigrations, type Db } from "../src/index.js";
 
-export const skipIntegration = process.env.ADLC_SKIP_INTEGRATION === "1";
+export { seedProjectAndDefinition, skipIntegration } from "@adlc/testing";
 
-export interface TestDatabase {
-  pool: pg.Pool;
+export interface TestDatabase extends Base {
   db: Db;
-  close(): Promise<void>;
 }
 
-/** Creates an isolated, fully migrated database in the shared container. */
+/** A migrated database for one test file, with a Drizzle handle. */
 export async function freshDatabase(options: { sessionTimeZone?: string } = {}): Promise<TestDatabase> {
-  const adminUrl = inject("pgAdminUrl");
-  const name = `t_${randomUUID().replace(/-/g, "")}`;
-  const admin = new pg.Client({ connectionString: adminUrl });
-  await admin.connect();
-  await admin.query(`create database ${name}`);
-  await admin.end();
-  const url = new URL(adminUrl);
-  url.pathname = `/${name}`;
-  const pool = new pg.Pool({
-    connectionString: url.toString(),
-    ...(options.sessionTimeZone ? { options: `-c TimeZone=${options.sessionTimeZone}` } : {}),
-  });
-  const db = createDb(pool);
-  await runMigrations(db);
-  return { pool, db, close: () => pool.end() };
+  const t = await fresh({ ...options, migrate: (pool) => runMigrations(createDb(pool)) });
+  return { ...t, db: createDb(t.pool) };
 }
