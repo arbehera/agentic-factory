@@ -12,9 +12,9 @@ RUN for c in /tmp/extra-ca/*.crt; do \
     done && rm -rf /tmp/extra-ca
 USER jenkins
 
-# Every plugin pinned, dependencies included (plugins.txt); the build fails if any would change.
+# Every plugin pinned, dependencies included (plugins.txt); --latest false: no dependency floats up.
 COPY --chown=jenkins:jenkins plugins.txt /usr/share/jenkins/ref/plugins.txt
-RUN jenkins-plugin-cli --plugin-file /usr/share/jenkins/ref/plugins.txt --skip-failed-plugins=false
+RUN jenkins-plugin-cli --plugin-file /usr/share/jenkins/ref/plugins.txt --latest false
 COPY --chown=jenkins:jenkins casc.yaml /usr/share/jenkins/ref/casc.yaml
 ENV CASC_JENKINS_CONFIG=/usr/share/jenkins/ref/casc.yaml \
     JAVA_OPTS="-Djenkins.install.runSetupWizard=false"
