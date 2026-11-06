@@ -1,7 +1,7 @@
 import { LEASE_TTL_MS } from "@adlc/domain";
-import { AgentRunRepository, AuditRepository, GatewaySessionRepository, InvalidSessionError, LeaseRepository } from "@adlc/db";
+import { AgentRunRepository, AuditRepository, GatewaySessionRepository, InvalidSessionError, LeaseRepository, NotificationRepository } from "@adlc/db";
 import { RUN_EXIT_CODES } from "@adlc/executor";
-import { FakeExecutorBackend } from "@adlc/testing";
+import { FakeExecutorBackend, FakeIssueTracker } from "@adlc/testing";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { Claim } from "../src/dispatcher.js";
 import { candidate, harness, skipIntegration, type Harness } from "./helpers.js";
@@ -113,5 +113,61 @@ describe.skipIf(skipIntegration)("P0-WP4 run launch and supervision", () => {
 
   it("an executor without an agent image is a configuration error", async () => {
     await expect(harness({}, new FakeExecutorBackend())).rejects.toThrow(/AGENT_IMAGE/);
+  });
+});
+
+describe.skipIf(skipIntegration)("AT-P0-02 failed runs escalate to a human (orchestrator side)", () => {
+  let h: Harness;
+  let exec: FakeExecutorBackend;
+  let jira: FakeIssueTracker;
+
+  beforeEach(async () => {
+    exec = new FakeExecutorBackend();
+    jira = new FakeIssueTracker();
+    h = await harness(ENV, exec, jira);
+  });
+  afterEach(async () => {
+    await h.close();
+  });
+
+  async function failRun(taskKey: string, status: string): Promise<string> {
+    jira.seed({ key: taskKey, type: "Task", status, summary: "t", description: "" });
+    h.source.queue = [candidate(h, taskKey)];
+    const [claim] = (await h.orch.dispatcher.tick()).claimed;
+    await h.orch.worker?.drain();
+    exec.exit(exec.byRun(claim?.runId ?? "")?.containerId ?? "", 1);
+    await h.orch.supervisor?.tick();
+    return claim?.runId ?? "";
+  }
+
+  it("AT-P0-02 moves the Jira task to Needs Human (audited) and raises run.needs-human for the role owners", async () => {
+    const runId = await failRun("PILOT-20", "In Progress");
+    expect(jira.issues.get("PILOT-20")?.status).toBe("Needs Human");
+    const [n] = await new NotificationRepository(h.orch.db).unrouted();
+    expect(n).toMatchObject({ event: "run.needs-human", severity: "high", audience: "role:dummy", link: `/runs/${runId}`, dedupeKey: "run.needs-human:PILOT-20" });
+    expect((await new AuditRepository(h.orch.db).list()).find((e) => e.action === "task.status")?.reason).toBe(`In Progress -> Needs Human: run ${runId} failed`);
+  });
+
+  it("FR-JIRA-002 a status that cannot go to Needs Human is left alone, but the human is still notified", async () => {
+    await failRun("PILOT-21", "Done");
+    expect(jira.issues.get("PILOT-21")?.status).toBe("Done");
+    expect(jira.calls.some((c) => c.startsWith("transition PILOT-21"))).toBe(false);
+    expect(await new NotificationRepository(h.orch.db).unrouted()).toHaveLength(1);
+  });
+
+  it("FR-JIRA-002 a human edit between read and write wins: no transition, notification still raised", async () => {
+    jira.seed({ key: "PILOT-22", type: "Task", status: "In Progress", summary: "t", description: "" });
+    const realTransition = jira.transition.bind(jira);
+    jira.transition = (key, to, version) => {
+      jira.humanEdit(key, { summary: "edited by a human" }); // the version moves under us
+      return realTransition(key, to, version);
+    };
+    h.source.queue = [candidate(h, "PILOT-22")];
+    const [claim] = (await h.orch.dispatcher.tick()).claimed;
+    await h.orch.worker?.drain();
+    exec.exit(exec.byRun(claim?.runId ?? "")?.containerId ?? "", 1);
+    await h.orch.supervisor?.tick();
+    expect(jira.issues.get("PILOT-22")?.status).toBe("In Progress");
+    expect(await new NotificationRepository(h.orch.db).unrouted()).toHaveLength(1);
   });
 });

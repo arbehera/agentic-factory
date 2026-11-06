@@ -2,6 +2,8 @@ import { z } from "zod";
 import { processPackManifestSchema, productProfileSchema, techPackManifestSchema } from "./packs.js";
 import { reviewerSetsSchema } from "./reviewer-sets.js";
 import { rolePolicySchema } from "./role-policy.js";
+import { rotaSchema } from "./rota.js";
+import { workingCalendarSchema } from "./working-calendar.js";
 import { tasksImportFileSchema } from "./tasks-import.js";
 
 /**
@@ -16,6 +18,8 @@ export function jsonSchemas(): Record<string, unknown> {
     "process-pack.schema.json": z.toJSONSchema(processPackManifestSchema),
     "role-policy.schema.json": z.toJSONSchema(rolePolicySchema, { io: "input" }),
     "reviewer-sets.schema.json": z.toJSONSchema(reviewerSetsSchema),
+    "rota.schema.json": z.toJSONSchema(rotaSchema, { io: "input" }),
+    "working-calendar.schema.json": z.toJSONSchema(workingCalendarSchema, { io: "input" }),
   };
 }
 

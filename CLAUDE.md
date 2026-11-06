@@ -42,6 +42,7 @@ pnpm --filter @adlc/importer import:tasks specs/NNN-x/tasks.md --sha <commit>   
 pnpm --filter @adlc/schemas gen:json-schema   # regenerate packages/schemas/json-schema/ (committed; a test checks freshness)
 pnpm --filter @adlc/agent-runtime build:bundle   # bundle the agent runtime for its image (refuses a bundled Docker client)
 ADLC_REQUIRE_ROOTLESS_DOCKER=1 pnpm test   # Linux runner/CI: Docker suites must run, not skip (runbook: docs/runbooks/wsl2-rootless-docker.md)
+pnpm --filter @adlc/portal-web dev   # portal web on Vite; proxies /api to PORTAL_API_URL (default http://localhost:3002)
 pnpm db:migrate            # drizzle migrations
 pnpm dev:up                # docker compose (infra/compose) with fakes
 pnpm test:e2e              # requires dev:up

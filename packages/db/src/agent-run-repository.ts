@@ -1,8 +1,8 @@
 import { agentRunMachine, stateHash, type Actor, type ActiveRuns, type AgentRunKind, type AgentRunState } from "@adlc/domain";
-import { and, eq, inArray, isNotNull, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, inArray, isNotNull, or, sql } from "drizzle-orm";
 import { AuditRepository } from "./audit-repository.js";
 import type { DbExecutor } from "./client.js";
-import { agentRun, project } from "./schema.js";
+import { agentDefinition, agentRun, project, stepRecord } from "./schema.js";
 
 export type AgentRunRow = typeof agentRun.$inferSelect;
 
@@ -100,6 +100,45 @@ export class AgentRunRepository {
       .innerJoin(project, eq(project.id, agentRun.projectId))
       .where(inArray(agentRun.state, [...SLOT_HOLDING_STATES]));
     return { total: Number(row?.total ?? 0), sandbox: Number(row?.sandbox ?? 0) };
+  }
+
+  /**
+   * Agent fleet (FR-POR-001): runs that hold a slot, plus runs that ended since `endedSince`, with
+   * their agent definition. Newest first.
+   */
+  async listForFleet(endedSince: Date, limit = 200) {
+    return this.db
+      .select({
+        id: agentRun.id,
+        projectId: agentRun.projectId,
+        kind: agentRun.kind,
+        taskKey: agentRun.taskKey,
+        componentPack: agentRun.componentPack,
+        step: agentRun.step,
+        state: agentRun.state,
+        startedAt: agentRun.startedAt,
+        heartbeatAt: agentRun.heartbeatAt,
+        endedAt: agentRun.endedAt,
+        tokensIn: agentRun.tokensIn,
+        tokensOut: agentRun.tokensOut,
+        costUsd: agentRun.costUsd,
+        exitReason: agentRun.exitReason,
+        createdAt: agentRun.createdAt,
+        role: agentDefinition.role,
+        agentVersion: agentDefinition.version,
+        modelTier: agentDefinition.tier,
+        autonomyLevel: agentDefinition.autonomyLevel,
+      })
+      .from(agentRun)
+      .innerJoin(agentDefinition, eq(agentDefinition.id, agentRun.agentDefinitionId))
+      .where(or(inArray(agentRun.state, [...SLOT_HOLDING_STATES]), gt(agentRun.endedAt, endedSince)))
+      .orderBy(desc(agentRun.createdAt))
+      .limit(limit);
+  }
+
+  /** Step timeline of a run (FR-POR-001 run detail). */
+  async steps(runId: string) {
+    return this.db.select().from(stepRecord).where(eq(stepRecord.runId, runId)).orderBy(asc(stepRecord.startedAt), asc(stepRecord.id));
   }
 
   /** Runs that own a container and may still be executing (supervisor input). */

@@ -1,0 +1,7 @@
+# Working calendar for notification deadlines (FR-NOT-002). ASSUMPTION (plan Q-14): the hours and
+# holidays below are dev defaults, not Pioneer's calendar.
+timeZone: Asia/Kolkata
+workingDays: [1, 2, 3, 4, 5]
+dayStart: "09:00"
+dayEnd: "18:00"
+holidays: []
