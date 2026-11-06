@@ -2,7 +2,7 @@ import { formatDecisionId, stateHash, type AuditEventContent } from "@adlc/domai
 import { sql } from "drizzle-orm";
 import type pg from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { AuditRepository, runMigrations, type Db } from "../src/index.js";
+import { ADVISORY_LOCKS, AuditRepository, runMigrations, type Db } from "../src/index.js";
 import { freshDatabase, skipIntegration, type TestDatabase } from "./helpers.js";
 
 const event = (n: number, extra: Partial<AuditEventContent> = {}): AuditEventContent => ({
@@ -49,6 +49,29 @@ describe.skipIf(skipIntegration)("P0-WP2 database (PostgreSQL 16)", () => {
   });
 
   describe("NFR-006 hash-chained audit", () => {
+    it("NFR-006 the export's read waits for an append in flight, so nothing commits below its cut", async () => {
+      const repo = new AuditRepository(db);
+      const first = await repo.append(event(100));
+      // Hold the chain lock as an append in progress would, inside an open transaction.
+      const holder = await pool.connect();
+      try {
+        await holder.query("begin");
+        await holder.query("select pg_advisory_xact_lock($1)", [ADVISORY_LOCKS.auditChain]);
+        let done = false;
+        const read = repo.listSealable(first.seq).then((events) => {
+          done = true;
+          return events;
+        });
+        await new Promise((r) => setTimeout(r, 200));
+        expect(done).toBe(false);
+        await holder.query("commit");
+        expect((await read).map((e) => e.seq)).toContain(first.seq);
+        expect((await read).every((e) => e.seq >= first.seq)).toBe(true);
+      } finally {
+        holder.release();
+      }
+    });
+
     it("NFR-006 appends a verifiable chain, linear under 25 concurrent writers", async () => {
       const repo = new AuditRepository(db);
       const written = await Promise.all(Array.from({ length: 25 }, (_, i) => repo.append(event(i))));
