@@ -7,6 +7,7 @@ import {
   checkExportEvents,
   compareWithDatabase,
   evidenceKey,
+  evidenceTargets,
   GENESIS_POINT,
   parseEvidenceTarget,
   segmentKey,
@@ -97,6 +98,8 @@ describe("NFR-006 WORM audit export: segments", () => {
     const key = `evidence/org/product/7/${SHA}.json`;
     expect(verifyExportSegments([s], new Map([[key, evidence]])).findings).toEqual([]);
     expect(verifyExportSegments([s], new Map()).findings).toEqual([{ kind: "evidence-missing", seq: 2, key }]);
+    expect(evidenceTargets(s.events).map((x) => x.target)).toEqual([{ repo: "org/product", prNumber: 7, headSha: SHA }]);
+    expect(() => evidenceTargets(chain([content("evidence.sign", "pr:bad")]))).toThrow(/malformed evidence target/);
     const swapped = { ...evidence, envelope: { ...envelope, payload: "e3gwfQ==" } };
     expect(verifyExportSegments([s], new Map([[key, swapped]])).findings).toEqual([{ kind: "evidence-mismatch", seq: 2, key }]);
   });
