@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { AgentRunRepository, AuditRepository, createDb, grantAppRole, InvalidRoleNameError, WRITE_ONCE_TABLES } from "../src/index.js";
+import { AgentRunRepository, AuditRepository, createDb, createPool, grantAppRole, InvalidRoleNameError, WRITE_ONCE_TABLES } from "../src/index.js";
 import { freshDatabase, seedProjectAndDefinition, skipIntegration, type TestDatabase } from "./helpers.js";
 
 const svc = { kind: "service", id: "adlc-orchestrator" } as const;
@@ -57,5 +57,41 @@ describe.skipIf(skipIntegration)("P0-WP11 services run as an application role th
 
   it("rejects a role name that is not a plain identifier", async () => {
     await expect(grantAppRole(t.pool, 'x"; drop table lease; --')).rejects.toBeInstanceOf(InvalidRoleNameError);
+  });
+});
+
+describe.skipIf(skipIntegration)("AT-P0-06 a pool survives the server closing its idle connections", () => {
+  it("reports the closed connection and the next query reconnects (no crash)", async () => {
+    const t = await freshDatabase();
+    const errors: string[] = [];
+    const pool = createPool(t.url, { onIdleError: (err) => errors.push(err.message) });
+    try {
+      const { rows } = await pool.query<{ pid: number }>("select pg_backend_pid() as pid");
+      await t.pool.query("select pg_terminate_backend($1)", [rows[0]?.pid]);
+      for (let i = 0; i < 50 && errors.length === 0; i++) await new Promise((r) => setTimeout(r, 20));
+      expect(errors[0]).toMatch(/terminat/);
+      expect((await pool.query<{ ok: number }>("select 1 as ok")).rows[0]?.ok).toBe(1);
+    } finally {
+      await pool.end();
+      await t.close();
+    }
+  });
+
+  it("without a handler, the closed connection becomes a process warning, not a crash", async () => {
+    const t = await freshDatabase();
+    const warnings: string[] = [];
+    const onWarning = (w: Error) => warnings.push(w.message);
+    process.on("warning", onWarning);
+    const pool = createPool(t.url);
+    try {
+      const { rows } = await pool.query<{ pid: number }>("select pg_backend_pid() as pid");
+      await t.pool.query("select pg_terminate_backend($1)", [rows[0]?.pid]);
+      for (let i = 0; i < 50 && warnings.length === 0; i++) await new Promise((r) => setTimeout(r, 20));
+      expect(warnings[0]).toMatch(/idle database connection closed/);
+    } finally {
+      process.off("warning", onWarning);
+      await pool.end();
+      await t.close();
+    }
   });
 });

@@ -55,7 +55,7 @@ export function buildOrchestrator(
   config: OrchestratorConfig,
   deps: { clock: Clock; logger: Logger; candidates?: CandidateSource; executor?: ExecutorBackend; issues?: IssueTracker },
 ): Orchestrator {
-  const pool = createPool(config.DATABASE_URL);
+  const pool = createPool(config.DATABASE_URL, { onIdleError: (err) => deps.logger.warn({ err: err.message }, "idle database connection closed") });
   const db = createDb(pool);
   const leases = new LeaseRepository(db);
   const runs = new AgentRunRepository(db);
