@@ -39,7 +39,7 @@
     "@nestjs/platform-express": "11.2.8",
     "@types/dockerode": "3.3.42",
     "dockerode": "4.0.12",
-    "esbuild": "0.25.12",
+    "esbuild": "0.28.1",
     "reflect-metadata": "0.2.2"
   }
 }
