@@ -24,7 +24,8 @@ export function createDb(pool: pg.Pool): Db {
  * carries on. That is how services ride through a database failover (AT-P0-06).
  */
 export function createPool(connectionString: string, opts: { onIdleError?: (err: Error) => void } = {}): pg.Pool {
-  const pool = new pg.Pool({ connectionString, max: 10 });
+  // Bounded connects and TCP keep-alive: a vanished host fails fast instead of hanging (AT-P0-06).
+  const pool = new pg.Pool({ connectionString, max: 10, connectionTimeoutMillis: 10_000, keepAlive: true });
   const report = opts.onIdleError ?? ((err: Error) => process.emitWarning(`idle database connection closed: ${err.message}`));
   pool.on("error", report);
   return pool;

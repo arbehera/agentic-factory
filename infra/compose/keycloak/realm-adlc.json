@@ -36,9 +36,9 @@
     }
   ],
   "users": [
-    { "username": "program-lead", "email": "program-lead@example.invalid", "emailVerified": true, "enabled": true, "firstName": "Program", "lastName": "Lead (placeholder)", "realmRoles": ["lead", "viewer"], "credentials": [{ "type": "password", "value": "${ADLC_DEV_USER_PASSWORD}", "temporary": false }] },
-    { "username": "platform-admin", "email": "platform-admin@example.invalid", "emailVerified": true, "enabled": true, "firstName": "Platform", "lastName": "Admin (placeholder)", "realmRoles": ["platform-admin", "operator", "viewer"], "credentials": [{ "type": "password", "value": "${ADLC_DEV_USER_PASSWORD}", "temporary": false }] },
-    { "username": "dummy-owner-onduty", "email": "dummy-owner-onduty@example.invalid", "emailVerified": true, "enabled": true, "firstName": "Dummy owner", "lastName": "On duty (placeholder)", "realmRoles": ["role-owner", "operator", "viewer"], "credentials": [{ "type": "password", "value": "${ADLC_DEV_USER_PASSWORD}", "temporary": false }] },
-    { "username": "viewer", "email": "viewer@example.invalid", "emailVerified": true, "enabled": true, "firstName": "Read-only", "lastName": "Viewer (placeholder)", "realmRoles": ["viewer"], "credentials": [{ "type": "password", "value": "${ADLC_DEV_USER_PASSWORD}", "temporary": false }] }
+    { "username": "program-lead", "email": "program-lead@example.invalid", "emailVerified": true, "enabled": true, "firstName": "Program", "lastName": "Placeholder", "realmRoles": ["lead", "viewer"], "credentials": [{ "type": "password", "value": "${ADLC_DEV_USER_PASSWORD}", "temporary": false }] },
+    { "username": "platform-admin", "email": "platform-admin@example.invalid", "emailVerified": true, "enabled": true, "firstName": "Platform", "lastName": "Placeholder", "realmRoles": ["platform-admin", "operator", "viewer"], "credentials": [{ "type": "password", "value": "${ADLC_DEV_USER_PASSWORD}", "temporary": false }] },
+    { "username": "dummy-owner-onduty", "email": "dummy-owner-onduty@example.invalid", "emailVerified": true, "enabled": true, "firstName": "Dummy Owner", "lastName": "Placeholder", "realmRoles": ["role-owner", "operator", "viewer"], "credentials": [{ "type": "password", "value": "${ADLC_DEV_USER_PASSWORD}", "temporary": false }] },
+    { "username": "viewer", "email": "viewer@example.invalid", "emailVerified": true, "enabled": true, "firstName": "Read-only", "lastName": "Placeholder", "realmRoles": ["viewer"], "credentials": [{ "type": "password", "value": "${ADLC_DEV_USER_PASSWORD}", "temporary": false }] }
   ]
 }
