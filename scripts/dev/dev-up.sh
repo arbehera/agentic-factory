@@ -11,6 +11,13 @@ socket="${DOCKER_HOST#unix://}"
 [ -S "$socket" ] || { echo "dev-up: no rootless Docker socket at $socket (docs/runbooks/wsl2-rootless-docker.md)" >&2; exit 1; }
 docker info --format '{{.SecurityOptions}}' | grep -q rootless || { echo "dev-up: the Docker daemon is not rootless (hard rule 6)" >&2; exit 1; }
 
+# After a failover drill the promoted replica holds the `db` alias; restarting the old primary
+# would give two databases that name (services would split between them). Reset first.
+if docker inspect -f '{{json .NetworkSettings.Networks}}' adlc-pg-replica-1 2>/dev/null | grep -q '"db"'; then
+  echo "dev-up: the stack is in its post-failover state (pg-replica is \`db\`). Reset it: pnpm dev:down --volumes" >&2
+  exit 1
+fi
+
 set -a
 # shellcheck disable=SC1091
 . "$compose_dir/images.env"
