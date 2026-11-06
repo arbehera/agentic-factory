@@ -16,6 +16,8 @@ export default defineConfig({
     screenshot: "only-on-failure",
     // Sign-in uses PKCE, which needs crypto.subtle, which browsers give only to secure origins.
     // localhost is one (people use http://localhost:8081); the test's in-network origin is not.
+    // The flag needs full Chromium: the default headless shell ignores it (checked in the image).
+    channel: "chromium",
     launchOptions: { args: ["--unsafely-treat-insecure-origin-as-secure=http://portal-web:8080"] },
   },
 });
