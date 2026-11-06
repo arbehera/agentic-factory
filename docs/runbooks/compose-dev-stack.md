@@ -32,6 +32,7 @@ All third-party images are pinned by digest in `infra/compose/images.env`. To re
 | Mailpit | http://localhost:8025 | Every email the notifier sends. |
 | dev-fakes | http://localhost:4000 | `POST /admin/seedIssue` etc. with `Bearer $FAKES_TOKEN` (see `packages/testing/src/fakes-server.ts`). |
 | Orchestrators | http://localhost:3100/ready, http://localhost:3101/ready | `leader: true` on exactly one of them. |
+| Jenkins | http://localhost:8082 | Only with `COMPOSE_PROFILES=ci pnpm dev:up`. User `admin`, password `JENKINS_ADMIN_PASSWORD` in `.env`. Behind a TLS-inspecting proxy, put its root CA in `infra/jenkins/certs/` first ([README](../../infra/jenkins/certs/README.md)). |
 
 ## 2. Run a task
 Seed a `To Do` task in the fake Jira. The leader dispatches it to the `dummy` role, and an agent container starts on the internal `adlc-agents` network, where it can reach only the gateway. The agent:

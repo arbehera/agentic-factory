@@ -49,6 +49,11 @@ pnpm dev:down              # stop the stack; `pnpm dev:down --volumes` also dele
 pnpm test:e2e              # AT-P0-01 with fakes + Playwright portal checks/screenshots (requires dev:up)
 pnpm test:load             # AT-P0-05: k6, 20 concurrent dummy runs (requires dev:up)
 pnpm test:failover         # AT-P0-06 drill: primary + leader lost, replica promoted (destructive; requires dev:up)
+COMPOSE_PROFILES=ci pnpm dev:up   # also builds and starts the Jenkins controller (infra/jenkins, CasC; http://localhost:8082)
+pnpm config:sync github plan infra/github/factory-sample.yaml [--offline --owner-type User]   # FR-GH-001 dry run (live needs GITHUB_ADMIN_TOKEN)
+pnpm config:sync github apply infra/github/factory-sample.yaml --confirm arbehera/factory-sample   # refuses plans with blockers
+pnpm config:sync jira plan infra/jira/agensdlc.yaml   # FR-JIRA-001 desired state (derived from @adlc/domain)
+scripts/dev/pin-jenkins-plugins.sh   # re-pin every Jenkins plugin, dependencies included (infra/jenkins/plugins.txt)
 pnpm audit:verify          # NFR-006: check the write-once audit/evidence export against itself and the DB (requires dev:up; exit 1 on findings)
 scripts/dev/pin-images.sh  # re-pin the stack's third-party images by digest (infra/compose/images.env)
 ```
