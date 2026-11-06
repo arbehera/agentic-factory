@@ -200,3 +200,16 @@ WP11 is the first time the services run as separate processes, so it starts by g
 | 11f | WORM export of audit and evidence to SeaweedFS (ADR-0006). | NFR audit |
 
 Decisions recorded in ADR-0014. The executor host role means the orchestrator container gets the rootless Docker socket. Agent containers never do (hard rule 6), and Kubernetes replaces this post-pilot.
+
+## 8. Answers recorded 2026-11-06
+| Q | Answer | Effect |
+|---|---|---|
+| Q-11 | Keep the current rule | `{comp:}` when it names a profile component, otherwise paths (ADR-0008). |
+| Q-12 | `metadata.version` (semver) | As implemented. |
+| Q-13 | Wall-clock budget per lease | As implemented (ADR-0009). |
+| Q-14 | 09:00–18:00 Mon–Fri, Asia/Kolkata, no holidays for now | `config/working-calendar.yaml` stays as is; the holiday calendar comes with the rota (OPEN-06/21). |
+| Q-08 | The human supplies real `specify` 1.2.6 output | AT-P0-08 stays "provisional fixtures" until the files arrive. |
+| Q-04 | Sandbox: Jira Cloud project `AGENSDLC` (pioneerindia.atlassian.net), GitHub `arbehera/agentic-factory`; Jenkins and Keycloak deployed fresh in Docker (no existing installation) | WP6 targets these. Credentials are never pasted in chat; the storage location is still to be agreed. |
+| Q-02 | URL to follow | Waiting for confirmation of which repository is the platform remote (see open question). |
+| Q-09 | Not answered | Deny-list review stays open. |
+
