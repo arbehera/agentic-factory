@@ -31,9 +31,13 @@ export const options = {
 };
 
 function token() {
-  const res = http.post(__ENV.TOKEN_URL, { grant_type: "password", client_id: "adlc-portal", username: __ENV.PORTAL_USER, password: __ENV.PORTAL_PASSWORD, scope: "openid" });
-  if (res.status !== 200) fail(`token request failed: HTTP ${res.status}`);
-  return res.json("access_token");
+  for (let attempt = 0; attempt < 30; attempt++) {
+    const res = http.post(__ENV.TOKEN_URL, { grant_type: "password", client_id: "adlc-portal", username: __ENV.PORTAL_USER, password: __ENV.PORTAL_PASSWORD, scope: "openid" });
+    if (res.status === 200) return res.json("access_token");
+    if (res.status !== 0 && res.status < 500) fail(`token request failed: HTTP ${res.status} ${res.body}`);
+    sleep(2); // Keycloak still starting
+  }
+  fail("token request failed: Keycloak did not answer");
 }
 
 const fakes = (path, args) => http.post(`${FAKES}/${path}`, JSON.stringify({ args }), { headers: { authorization: `Bearer ${__ENV.FAKES_TOKEN}`, "content-type": "application/json" } });

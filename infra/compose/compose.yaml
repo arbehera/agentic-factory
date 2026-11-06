@@ -161,6 +161,7 @@ services:
     ports: ["127.0.0.1:8081:8080"]
     depends_on:
       portal-api: { condition: service_healthy }
+      keycloak: { condition: service_healthy }
 
   keycloak:
     image: ${KEYCLOAK_IMAGE:?}
@@ -178,6 +179,11 @@ services:
       - ./keycloak/realm-adlc.json:/opt/keycloak/data/import/realm-adlc.json:ro
     networks: [adlc]
     ports: ["127.0.0.1:8080:8080"]
+    # The image has no curl: ask the management port's readiness endpoint over bash's /dev/tcp.
+    healthcheck:
+      <<: *health
+      retries: 60
+      test: [CMD-SHELL, "exec 3<>/dev/tcp/127.0.0.1/9000 && printf 'GET /health/ready HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n' >&3 && grep -q UP <&3"]
 
   mailpit:
     image: ${MAILPIT_IMAGE:?}
