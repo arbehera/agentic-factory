@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { BranchMovedError, type CheckStatus, type FileChange, type FileContent, type SourceControl } from "@adlc/adapters";
+import { BranchMovedError, type CheckStatus, type CommitStatusInput, type FileChange, type FileContent, type PullRequest, type SourceControl } from "@adlc/adapters";
 
 interface Commit {
   sha: string;
@@ -78,6 +78,34 @@ export class FakeSourceControl implements SourceControl {
   checkStatuses(repo: string, sha: string): Promise<CheckStatus[]> {
     this.calls.push(`checkStatuses ${repo} ${sha}`);
     return Promise.resolve(this.statuses.get(sha) ?? []);
+  }
+
+  getPullRequest(repo: string, prNumber: number): Promise<PullRequest | null> {
+    this.calls.push(`getPullRequest ${repo} ${prNumber}`);
+    const pr = this.pullRequests.find((p) => p.repo === repo && p.number === prNumber);
+    if (!pr) return Promise.resolve(null);
+    return Promise.resolve({ number: pr.number, head: pr.head, base: pr.base, headSha: this.branches.get(`${repo}:${pr.head}`) ?? "" });
+  }
+
+  /** Status history per commit; the latest status per context wins, as on GitHub. */
+  readonly postedStatuses: { repo: string; sha: string; status: CommitStatusInput }[] = [];
+
+  setCommitStatus(repo: string, sha: string, status: CommitStatusInput): Promise<void> {
+    this.calls.push(`setCommitStatus ${repo} ${sha} ${status.context}=${status.state}`);
+    this.postedStatuses.push({ repo, sha, status });
+    const current = (this.statuses.get(sha) ?? []).filter((s) => s.context !== status.context);
+    this.statuses.set(sha, [...current, { context: status.context, state: status.state }]);
+    return Promise.resolve();
+  }
+
+  /** Test control: push a commit to a branch as a human would (moves the PR head). */
+  pushAsHuman(repo: string, branch: string, files: Record<string, string>): string {
+    const head = this.branches.get(`${repo}:${branch}`) ?? null;
+    const merged = new Map(head ? this.commits.get(head)?.files : undefined);
+    for (const [k, v] of Object.entries(files)) merged.set(k, v);
+    const sha = this.store(head, merged);
+    this.branches.set(`${repo}:${branch}`, sha);
+    return sha;
   }
 
   private store(parent: string | null, files: Map<string, string>): string {

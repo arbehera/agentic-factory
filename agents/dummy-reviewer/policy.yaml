@@ -1,0 +1,8 @@
+# Tool policy for the Phase 0 dummy reviewer (P0-WP7): reads the change, records one verdict.
+# It cannot push, comment or change Jira; verdicts go to the write-once evidence store only.
+role: dummy-reviewer
+tools:
+  - github.read_file
+  - github.get_branch
+  - github.check_status
+  - evidence.write_verdict

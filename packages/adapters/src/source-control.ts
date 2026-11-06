@@ -23,6 +23,20 @@ export interface CheckStatus {
   state: "pending" | "success" | "failure" | "error";
 }
 
+export interface PullRequest {
+  number: number;
+  head: string;
+  base: string;
+  headSha: string;
+}
+
+export interface CommitStatusInput {
+  context: string;
+  state: CheckStatus["state"];
+  description: string;
+  targetUrl?: string;
+}
+
 export interface SourceControl {
   getFile(repo: string, ref: string, path: string): Promise<FileContent | null>;
   /** Returns the branch head SHA. */
@@ -33,6 +47,12 @@ export interface SourceControl {
   openPullRequest(repo: string, pr: { head: string; base: string; title: string; body: string }): Promise<{ number: number; headSha: string }>;
   commentOnPullRequest(repo: string, prNumber: number, body: string): Promise<void>;
   checkStatuses(repo: string, sha: string): Promise<CheckStatus[]>;
+  getPullRequest(repo: string, prNumber: number): Promise<PullRequest | null>;
+  /**
+   * Posts a commit status (e.g. adlc/verify, adlc/evidence). Used by CI and the signer under their
+   * own identities; no agent tool exposes it. Re-posting the same status is safe.
+   */
+  setCommitStatus(repo: string, sha: string, status: CommitStatusInput): Promise<void>;
 }
 
 export class BranchMovedError extends Error {

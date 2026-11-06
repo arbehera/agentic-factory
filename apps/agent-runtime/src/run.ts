@@ -4,6 +4,7 @@ import { z } from "zod";
 import { GatewayClient } from "./gateway-client.js";
 import { Heartbeater } from "./heartbeat.js";
 import { runDummy } from "./roles/dummy.js";
+import { runDummyReviewer } from "./roles/dummy-reviewer.js";
 
 /** Container environment set by the orchestrator's RunLauncher. */
 export const agentEnvSchema = z.object({
@@ -13,6 +14,11 @@ export const agentEnvSchema = z.object({
   ADLC_TASK_KEY: z.string().regex(/^[A-Z][A-Z0-9]*-\d+$/),
   ADLC_ROLE: z.string().regex(/^[a-z][a-z0-9-]*$/),
   ADLC_REPO: z.string().regex(/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/),
+  /** Model ID from the agent definition (roles that call a model). */
+  ADLC_MODEL: z.string().min(1).max(200).optional(),
+  /** Review runs: the pull request and the exact head commit under review. */
+  ADLC_PR_NUMBER: z.coerce.number().int().positive().optional(),
+  ADLC_HEAD_SHA: z.string().regex(/^[0-9a-f]{40}$/).optional(),
   /** FR-ORC-008: 5 minutes, i.e. three beats per 15-minute lease. */
   ADLC_HEARTBEAT_MS: z.coerce.number().int().positive().default(300_000),
 });
@@ -31,6 +37,7 @@ export async function runAgent(env: Record<string, string | undefined>, logger: 
   }
   const e = parsed.data;
   const log = logger.child({ runId: e.ADLC_RUN_ID, taskKey: e.ADLC_TASK_KEY, role: e.ADLC_ROLE });
+  if (e.ADLC_ROLE === "dummy-reviewer") return review(e, log);
   if (e.ADLC_ROLE !== "dummy") {
     log.error("role not available in this runtime version");
     return RUN_EXIT_CODES.failed;
@@ -57,6 +64,27 @@ export async function runAgent(env: Record<string, string | undefined>, logger: 
     return RUN_EXIT_CODES.failed;
   } finally {
     heart.stop();
+    await gateway.close();
+  }
+}
+
+/**
+ * A review run (P0-WP7). It holds no task lease — the author's run does — so it does not
+ * heartbeat; its gateway session expires on its own.
+ */
+async function review(e: z.infer<typeof agentEnvSchema>, log: Logger): Promise<number> {
+  if (e.ADLC_PR_NUMBER === undefined || e.ADLC_HEAD_SHA === undefined || e.ADLC_MODEL === undefined) {
+    log.error({ missing: ["ADLC_PR_NUMBER", "ADLC_HEAD_SHA", "ADLC_MODEL"].filter((k) => e[k as keyof typeof e] === undefined) }, "review run needs a PR, a head SHA and a model");
+    return RUN_EXIT_CODES.failed;
+  }
+  const gateway = new GatewayClient(e.ADLC_GATEWAY_URL, e.ADLC_GATEWAY_TOKEN);
+  try {
+    await runDummyReviewer(gateway, { runId: e.ADLC_RUN_ID, repo: e.ADLC_REPO, prNumber: e.ADLC_PR_NUMBER, headSha: e.ADLC_HEAD_SHA, model: e.ADLC_MODEL, logger: log });
+    return RUN_EXIT_CODES.succeeded;
+  } catch (err) {
+    log.error({ err: (err as Error).message, kind: (err as Error).name }, "review failed");
+    return RUN_EXIT_CODES.failed;
+  } finally {
     await gateway.close();
   }
 }

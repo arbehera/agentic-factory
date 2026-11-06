@@ -1,5 +1,5 @@
 import type { IssueTracker, SourceControl } from "@adlc/adapters";
-import type { DecisionRepository, GatewaySessionContext } from "@adlc/db";
+import type { DecisionRepository, EvidenceRepository, GatewaySessionContext, ModelCallRepository } from "@adlc/db";
 import type { RolePolicy } from "@adlc/schemas";
 import type { z } from "zod";
 
@@ -18,6 +18,8 @@ export interface ToolDeps {
   jira: IssueTracker;
   github: SourceControl;
   decisions: DecisionRepository;
+  evidence: EvidenceRepository;
+  modelCalls: ModelCallRepository;
 }
 
 export interface ToolDef<A = unknown> {

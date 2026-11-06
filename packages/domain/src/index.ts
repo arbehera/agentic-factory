@@ -3,6 +3,7 @@ export * from "./audit.js";
 export * from "./budget.js";
 export * from "./decision.js";
 export * from "./errors.js";
+export * from "./evidence.js";
 export * from "./gate.js";
 export * from "./ids.js";
 export * from "./lease.js";

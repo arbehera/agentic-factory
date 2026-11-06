@@ -167,4 +167,12 @@ Notes:
 - Dev host: Ubuntu 24.04.1, WSL 2.6.3, Docker Engine 29.3.1 rootless.
 - **Proven on rootless Docker:** an agent container from the inside (uid 65532, no caps, no-new-privs, seccomp, read-only root, no socket, limits, no egress, gateway reachable); the agent image runs under it.
 - **Deferred:** containerised agent ↔ containerised gateway (P0-WP11 Compose); log archiving (P0-WP10/WP11); duplicate-PR check (needs real client, Q-04). |
+| P0-WP7 | done on `phase-0/p0-wp7-evidence-signer`:
+- `evaluateSigning` (4 conditions, property-tested).
+- `packages/attestation`: DSSE + in-toto, software Ed25519 key dev-only (OPEN-07).
+- Write-once `model_call` / `reviewer_verdict` / `evidence_record`.
+- Gateway model proxy + `evidence.write_verdict` (review-target binding, one verdict per model call).
+- `apps/signer`; dummy reviewer; reviewer sets; Jenkins verify skeleton; ADR-0012.
+- **Proven in-process:** PR → verify → verdict → signed evidence → `adlc/evidence`; a push invalidates; request-changes blocks.
+- **Deferred:** signer CLI and real GitHub (Q-04); merge-group / patch-id (P3-WP3); review dispatch (Phase 3; a minimal trigger for AT-P0-01 in P0-WP11); model streaming (Phase 1). |
 | others | not started |

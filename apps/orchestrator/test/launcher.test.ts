@@ -43,7 +43,7 @@ describe.skipIf(skipIntegration)("P0-WP4 run launch and supervision", () => {
       limits: { cpus: 1, memoryMb: 256, pidsLimit: 512, scratchMb: 128 },
       env: { ADLC_GATEWAY_URL: "http://adlc-gateway:3001", ADLC_RUN_ID: claim.runId, ADLC_TASK_KEY: "PILOT-1", ADLC_ROLE: "dummy", ADLC_REPO: "org/product" },
     });
-    expect(Object.keys(spec?.env ?? {}).sort()).toEqual(["ADLC_GATEWAY_TOKEN", "ADLC_GATEWAY_URL", "ADLC_REPO", "ADLC_ROLE", "ADLC_RUN_ID", "ADLC_TASK_KEY"]);
+    expect(Object.keys(spec?.env ?? {}).sort()).toEqual(["ADLC_GATEWAY_TOKEN", "ADLC_GATEWAY_URL", "ADLC_MODEL", "ADLC_REPO", "ADLC_ROLE", "ADLC_RUN_ID", "ADLC_TASK_KEY"]);
 
     // The token is the run's gateway session, bound to the lease's fencing token.
     const session = await new GatewaySessionRepository(h.orch.db).resolve(spec?.env.ADLC_GATEWAY_TOKEN ?? "", h.clock.now());

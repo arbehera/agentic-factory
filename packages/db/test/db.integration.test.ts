@@ -43,8 +43,8 @@ describe.skipIf(skipIntegration)("P0-WP2 database (PostgreSQL 16)", () => {
     );
     expect(rows.map((r) => r.t).sort()).toEqual([
       "agent_definition", "agent_run", "audit_event", "budget_ledger", "component_lock", "control_flag", "decision",
-      "evidence_record", "gate", "gateway_session", "job", "lease", "notification", "pack_version", "product_profile", "project",
-      "step_record", "test_target_lease", "trace_link", "trace_node",
+      "evidence_record", "gate", "gateway_session", "job", "lease", "model_call", "notification", "pack_version", "product_profile", "project",
+      "reviewer_verdict", "step_record", "test_target_lease", "trace_link", "trace_node",
     ]);
   });
 

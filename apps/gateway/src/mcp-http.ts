@@ -7,7 +7,7 @@ import { CallToolRequestSchema, ListToolsRequestSchema, type CallToolResult } fr
 import { z } from "zod";
 import { InvalidArgumentsError, ToolNotPermittedError, UnknownToolError, type Gateway } from "./gateway.js";
 
-export const MCP_SERVERS = ["jira", "github", "decisions"] as const;
+export const MCP_SERVERS = ["jira", "github", "decisions", "evidence"] as const;
 
 /** Errors whose message is safe to show the agent; anything else becomes a generic error. */
 const AGENT_VISIBLE = [PolicyDeniedError, ToolNotPermittedError, UnknownToolError, InvalidArgumentsError];

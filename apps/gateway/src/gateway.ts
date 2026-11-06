@@ -3,8 +3,10 @@ import { stateHash } from "@adlc/domain";
 import {
   AuditRepository,
   DecisionRepository,
+  EvidenceRepository,
   GatewaySessionRepository,
   LeaseRepository,
+  ModelCallRepository,
   type Db,
   type DbExecutor,
   type GatewaySessionContext,
@@ -118,7 +120,12 @@ export class Gateway {
       const ctx: ToolContext = { run, policy, now };
 
       const invoke = async (db: DbExecutor) => {
-        const raw = await tool.handle(ctx, parsed.data, { ...this.deps.adapters, decisions: new DecisionRepository(db) });
+        const raw = await tool.handle(ctx, parsed.data, {
+          ...this.deps.adapters,
+          decisions: new DecisionRepository(db),
+          evidence: new EvidenceRepository(this.deps.db),
+          modelCalls: new ModelCallRepository(this.deps.db),
+        });
         const result = redactSecrets(toJson(raw), this.deps.secrets.knownValues());
         await audit(db, "allowed", result);
         return result;

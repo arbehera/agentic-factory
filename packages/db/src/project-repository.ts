@@ -1,5 +1,5 @@
 import type { DispatchEnvironment } from "@adlc/domain";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import type { DbExecutor } from "./client.js";
 import { project } from "./schema.js";
 
@@ -17,6 +17,12 @@ export class ProjectRepository {
     const [row] = await this.db.select().from(project).where(eq(project.id, id));
     if (!row) throw new ProjectNotFoundError(`project ${id} not found`);
     return row;
+  }
+
+  /** The project that owns a repository (repos is a JSON array of "owner/name"). */
+  async findByRepo(repo: string): Promise<ProjectRow | null> {
+    const [row] = await this.db.select().from(project).where(sql`${project.repos} @> ${JSON.stringify([repo])}::jsonb`);
+    return row ?? null;
   }
 
   async environment(id: string): Promise<DispatchEnvironment> {
