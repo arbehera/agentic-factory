@@ -215,3 +215,13 @@ Decisions recorded in ADR-0014. The executor host role means the orchestrator co
 | Q-04 (Jenkins, Keycloak) | Added to the Compose stack | WP6 adds a pinned Jenkins image configured as code; Keycloak is already in Compose. |
 | Q-09 | Deny-list accepted as is | Q-09 closed; changes later by PR. |
 
+## 9. P0-WP11 stack runs (2026-11-06, WSL2 rootless Docker 29.3.1, WSL memory 10 GB)
+| AT | Result | Evidence |
+|---|---|---|
+| AT-P0-01 (fakes half) | **pass** | `pnpm test:e2e`: To Do -> In Progress -> In Review -> review run + signed `adlc/evidence` -> Awaiting Approval -> human merge -> Done, all audited; Playwright portal checks pass. Screenshots: `docs/phase-reports/evidence/p0-wp11/`. Sandbox half waits for Q-04. |
+| AT-P0-05 | **pass** | `pnpm test:load`: 20 runs; dispatch latency max 2.6 s (< 30 s); heartbeat age max 5 s; 20 running at once; 20/20 succeeded. |
+| AT-P0-06 | **pass** | `pnpm test:failover`: primary + leader lost, replica promoted, new leader after 4 s (RTO target 1 h); replication lag 0 bytes; in-flight lease kept its fencing token, renewed, and the run succeeded; new work dispatched. |
+
+Bugs found by these runs and fixed: services crashing when PostgreSQL closed idle connections; ready-source starvation behind in-flight tasks; Keycloak placeholder names blocked sign-in; fake Jira ignored status clauses; fake model API reused message IDs across restarts; `dev:down` broken and the post-failover stack restartable into two `db` hosts; PKCE sign-in in the test browser.
+Not reproduced: one earlier load run where runs took ~454 s and heartbeats stalled. The next runs (single-run probe and the full load test) showed 5 s heartbeats and on-time completion; most likely a side effect of the fake-search bug, not proven.
+
