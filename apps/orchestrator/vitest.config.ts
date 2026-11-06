@@ -10,7 +10,8 @@ export default defineConfig({
     coverage: {
       provider: "v8",
       include: ["src/**/*.ts"],
-      exclude: ["src/main.ts"],
+      // Process entry points (wiring only; exercised by the Compose stack): main and the audit-export CLI.
+      exclude: ["src/main.ts", "src/audit-export-cli.ts"],
       thresholds: { lines: 85, statements: 85, functions: 85, branches: 85 },
     },
   },

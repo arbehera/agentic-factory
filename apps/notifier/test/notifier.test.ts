@@ -94,6 +94,24 @@ describe.skipIf(skipIntegration)("FR-NOT-001/002 notifier", () => {
     expect((await repo.inbox("g5@example.invalid"))[0]?.dueAt).toEqual(ist("2026-11-06T10:00:00"));
   });
 
+  it("FR-NOT-001 an event type the catalogue does not know still gets a deadline (4 working hours) and a generic action", async () => {
+    await raise({ event: "something.new", severity: "normal", dedupeKey: "new" });
+    await notifier.tick();
+    const m = email.sent[0];
+    expect(m?.text).toContain("Acknowledge by: 5 Nov 2026, 14:00 (Asia/Kolkata)");
+    expect(m?.text).toContain("Suggested action: Open the item and decide what to do.");
+  });
+
+  it("FR-NOT-002 an overdue notification acknowledged between the read and the escalation is not escalated", async () => {
+    await raise();
+    await notifier.tick();
+    now = ist("2026-11-05T14:00:00");
+    // Another replica (or a human) wins the race: escalate finds nothing left to escalate.
+    const racing = Object.assign(Object.create(repo) as NotificationRepository, { escalate: () => Promise.resolve(null) });
+    const lagging = new NotifierService(racing, email, ROTA, CALENDAR, "https://portal.example.invalid", { now: () => now }, silent);
+    expect(await lagging.tick()).toMatchObject({ escalated: 0 });
+  });
+
   it("hard rule 11: acknowledging is audited and idempotent", async () => {
     const { row } = await raise();
     await repo.acknowledge(row.id, { kind: "human", id: "op" }, now);
