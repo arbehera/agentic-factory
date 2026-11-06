@@ -111,4 +111,10 @@ Notes:
 - `@adlc/db`: Drizzle tables for every §5 entity, a partitioned append-only audit table, `AuditRepository`, and 11 PostgreSQL 16 integration tests.
 - ADR-0004 and ADR-0005.
 - Deferred: the WORM export (waits on Q-05); revoking UPDATE/DELETE/TRUNCATE from DB roles (P0-WP11). |
+| P0-WP9 | done locally on `phase-0/p0-wp9-importer`:
+- `@adlc/importer` parser + CLI (`import:tasks`).
+- `tasks.import.json` Zod contract + committed JSON Schema.
+- Contract test auto-discovers `test/fixtures/speckit-<ver>/` (2 **provisional** fixtures, golden files reviewed).
+- 30 malformed-line cases, each with its line number; ADR-0007.
+- **AT-P0-08 passes against provisional fixtures only.** Real `specify` 1.2.6 output must be added before the phase report (Q-08). |
 | others | not started |

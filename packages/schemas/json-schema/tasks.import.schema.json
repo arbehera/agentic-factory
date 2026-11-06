@@ -1,0 +1,127 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "properties": {
+      "taskId": {
+        "type": "string",
+        "pattern": "^T\\d{3,}$"
+      },
+      "title": {
+        "type": "string",
+        "minLength": 1
+      },
+      "userStory": {
+        "anyOf": [
+          {
+            "type": "string",
+            "pattern": "^US\\d+$"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "parallel": {
+        "type": "boolean"
+      },
+      "requirementIds": {
+        "type": "array",
+        "items": {
+          "type": "string",
+          "pattern": "^(STK|SYS|HWR|CSR|SWR)-\\d+$"
+        }
+      },
+      "component": {
+        "anyOf": [
+          {
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "complexity": {
+        "anyOf": [
+          {
+            "type": "string",
+            "enum": [
+              "S",
+              "M",
+              "L"
+            ]
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "flags": {
+        "type": "array",
+        "items": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]*$"
+        }
+      },
+      "depends": {
+        "type": "array",
+        "items": {
+          "type": "string",
+          "pattern": "^T\\d{3,}$"
+        }
+      },
+      "acceptanceCriteria": {
+        "type": "array",
+        "items": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "specRef": {
+        "type": "object",
+        "properties": {
+          "feature": {
+            "type": "string",
+            "pattern": "^\\d{3}-[a-z0-9][a-z0-9-]*$"
+          },
+          "taskId": {
+            "type": "string",
+            "pattern": "^T\\d{3,}$"
+          },
+          "path": {
+            "type": "string",
+            "pattern": "^specs\\/\\d{3}-[a-z0-9-]+\\/tasks\\.md$"
+          },
+          "sha": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{7,40}$"
+          }
+        },
+        "required": [
+          "feature",
+          "taskId",
+          "path",
+          "sha"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "required": [
+      "taskId",
+      "title",
+      "userStory",
+      "parallel",
+      "requirementIds",
+      "component",
+      "complexity",
+      "flags",
+      "depends",
+      "acceptanceCriteria",
+      "specRef"
+    ],
+    "additionalProperties": false
+  }
+}

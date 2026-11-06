@@ -1,0 +1,236 @@
+[
+  {
+    "taskId": "T001",
+    "title": "Create project structure per implementation plan",
+    "userStory": null,
+    "parallel": false,
+    "requirementIds": [],
+    "component": null,
+    "complexity": null,
+    "flags": [],
+    "depends": [],
+    "acceptanceCriteria": [],
+    "specRef": {
+      "feature": "001-plain-speckit",
+      "taskId": "T001",
+      "path": "specs/001-plain-speckit/tasks.md",
+      "sha": "0000000"
+    }
+  },
+  {
+    "taskId": "T002",
+    "title": "Initialize the service project with its dependencies",
+    "userStory": null,
+    "parallel": false,
+    "requirementIds": [],
+    "component": null,
+    "complexity": null,
+    "flags": [],
+    "depends": [],
+    "acceptanceCriteria": [],
+    "specRef": {
+      "feature": "001-plain-speckit",
+      "taskId": "T002",
+      "path": "specs/001-plain-speckit/tasks.md",
+      "sha": "0000000"
+    }
+  },
+  {
+    "taskId": "T003",
+    "title": "Configure linting and formatting tools",
+    "userStory": null,
+    "parallel": true,
+    "requirementIds": [],
+    "component": null,
+    "complexity": null,
+    "flags": [],
+    "depends": [],
+    "acceptanceCriteria": [],
+    "specRef": {
+      "feature": "001-plain-speckit",
+      "taskId": "T003",
+      "path": "specs/001-plain-speckit/tasks.md",
+      "sha": "0000000"
+    }
+  },
+  {
+    "taskId": "T004",
+    "title": "Setup database schema and migrations framework in src/db/",
+    "userStory": null,
+    "parallel": false,
+    "requirementIds": [],
+    "component": null,
+    "complexity": null,
+    "flags": [],
+    "depends": [],
+    "acceptanceCriteria": [],
+    "specRef": {
+      "feature": "001-plain-speckit",
+      "taskId": "T004",
+      "path": "specs/001-plain-speckit/tasks.md",
+      "sha": "0000000"
+    }
+  },
+  {
+    "taskId": "T005",
+    "title": "Implement request validation middleware in src/middleware/validate",
+    "userStory": null,
+    "parallel": true,
+    "requirementIds": [],
+    "component": null,
+    "complexity": null,
+    "flags": [],
+    "depends": [],
+    "acceptanceCriteria": [],
+    "specRef": {
+      "feature": "001-plain-speckit",
+      "taskId": "T005",
+      "path": "specs/001-plain-speckit/tasks.md",
+      "sha": "0000000"
+    }
+  },
+  {
+    "taskId": "T006",
+    "title": "Contract test for GET /reports/{id}/export in tests/contract/export.spec",
+    "userStory": "US1",
+    "parallel": true,
+    "requirementIds": [],
+    "component": null,
+    "complexity": null,
+    "flags": [],
+    "depends": [],
+    "acceptanceCriteria": [],
+    "specRef": {
+      "feature": "001-plain-speckit",
+      "taskId": "T006",
+      "path": "specs/001-plain-speckit/tasks.md",
+      "sha": "0000000"
+    }
+  },
+  {
+    "taskId": "T007",
+    "title": "Integration test for the CSV export journey in tests/integration/export.spec",
+    "userStory": "US1",
+    "parallel": true,
+    "requirementIds": [],
+    "component": null,
+    "complexity": null,
+    "flags": [],
+    "depends": [],
+    "acceptanceCriteria": [],
+    "specRef": {
+      "feature": "001-plain-speckit",
+      "taskId": "T007",
+      "path": "specs/001-plain-speckit/tasks.md",
+      "sha": "0000000"
+    }
+  },
+  {
+    "taskId": "T008",
+    "title": "Implement the CSV serializer in src/export/csv",
+    "userStory": "US1",
+    "parallel": false,
+    "requirementIds": [],
+    "component": null,
+    "complexity": null,
+    "flags": [],
+    "depends": [],
+    "acceptanceCriteria": [],
+    "specRef": {
+      "feature": "001-plain-speckit",
+      "taskId": "T008",
+      "path": "specs/001-plain-speckit/tasks.md",
+      "sha": "0000000"
+    }
+  },
+  {
+    "taskId": "T009",
+    "title": "Implement GET /reports/{id}/export in src/api/export (depends on T008)",
+    "userStory": "US1",
+    "parallel": false,
+    "requirementIds": [],
+    "component": null,
+    "complexity": null,
+    "flags": [],
+    "depends": [],
+    "acceptanceCriteria": [],
+    "specRef": {
+      "feature": "001-plain-speckit",
+      "taskId": "T009",
+      "path": "specs/001-plain-speckit/tasks.md",
+      "sha": "0000000"
+    }
+  },
+  {
+    "taskId": "T010",
+    "title": "Create the ExportSchedule model in src/models/export-schedule",
+    "userStory": "US2",
+    "parallel": true,
+    "requirementIds": [],
+    "component": null,
+    "complexity": null,
+    "flags": [],
+    "depends": [],
+    "acceptanceCriteria": [],
+    "specRef": {
+      "feature": "001-plain-speckit",
+      "taskId": "T010",
+      "path": "specs/001-plain-speckit/tasks.md",
+      "sha": "0000000"
+    }
+  },
+  {
+    "taskId": "T011",
+    "title": "Implement the scheduler job in src/jobs/export-scheduler",
+    "userStory": "US2",
+    "parallel": false,
+    "requirementIds": [],
+    "component": null,
+    "complexity": null,
+    "flags": [],
+    "depends": [],
+    "acceptanceCriteria": [],
+    "specRef": {
+      "feature": "001-plain-speckit",
+      "taskId": "T011",
+      "path": "specs/001-plain-speckit/tasks.md",
+      "sha": "0000000"
+    }
+  },
+  {
+    "taskId": "T012",
+    "title": "Documentation updates in docs/export.md",
+    "userStory": null,
+    "parallel": true,
+    "requirementIds": [],
+    "component": null,
+    "complexity": null,
+    "flags": [],
+    "depends": [],
+    "acceptanceCriteria": [],
+    "specRef": {
+      "feature": "001-plain-speckit",
+      "taskId": "T012",
+      "path": "specs/001-plain-speckit/tasks.md",
+      "sha": "0000000"
+    }
+  },
+  {
+    "taskId": "T013",
+    "title": "Run the quickstart.md validation",
+    "userStory": null,
+    "parallel": false,
+    "requirementIds": [],
+    "component": null,
+    "complexity": null,
+    "flags": [],
+    "depends": [],
+    "acceptanceCriteria": [],
+    "specRef": {
+      "feature": "001-plain-speckit",
+      "taskId": "T013",
+      "path": "specs/001-plain-speckit/tasks.md",
+      "sha": "0000000"
+    }
+  }
+]

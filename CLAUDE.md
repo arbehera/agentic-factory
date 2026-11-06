@@ -38,6 +38,8 @@ pnpm test                  # unit + integration (Testcontainers)
 pnpm test:coverage
 pnpm check:neutrality      # core-neutrality deny-list check (FR-PCK-005)
 pnpm verify                # lint + typecheck + test:coverage + check:neutrality (CI entry point)
+pnpm --filter @adlc/importer import:tasks specs/NNN-x/tasks.md --sha <commit>   # tasks.md -> tasks.import.json (FR-IMP-001)
+pnpm --filter @adlc/schemas gen:json-schema   # regenerate packages/schemas/json-schema/ (committed; a test checks freshness)
 pnpm db:migrate            # drizzle migrations
 pnpm dev:up                # docker compose (infra/compose) with fakes
 pnpm test:e2e              # requires dev:up
