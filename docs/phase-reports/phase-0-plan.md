@@ -66,7 +66,22 @@ Each WP is one PR (or less). Conventional Commits with `Implements:` / `Tests:` 
 | OPEN-06 (no stub in spec §12) | Placeholder sandbox groups `adlc-approvers-<gate>` with test users only; no real names | WP6 |
 | OPEN-08 (no stub in spec §12) | Not needed: the Phase 0 dummy agent is deterministic and makes no Claude API call | WP4 |
 
-## 5. Questions for the human (blocking items marked ⛔)
+## 5. Questions for the human — answered 2026-11-05
+
+| Q | Answer | Effect |
+|---|---|---|
+| Q-01 | Jenkins | Root `Jenkinsfile` calls `pnpm verify`. |
+| Q-02 | Human creates the remote | Branches stay local until the URL is shared; then one PR per WP. |
+| Q-03 | Rootless Docker in WSL2 on the dev machine | Container security and load tests (WP4, WP11) run in WSL2; setup steps go in a runbook with WP4. |
+| Q-04 | Sandbox later; fakes now | AT-P0-01/04 built against fakes + dry-run; reported "not run" until sandbox access exists. |
+| Q-05 | SeaweedFS (Apache-2.0) | ADR-0006. S3-compatible `ObjectStore` adapter; used by the WORM export (WP11). |
+| Q-06 | Pin Node 22 everywhere | `engines` = `>=22 <23`; CI and images use 22. The dev machine needs Node 22 installed (currently 24). |
+| Q-07 | Not platform scope | Baseline data (OPEN-17) is a Program Lead task; noted in the phase report. |
+| Q-08 | Provisional fixtures, then real | Provisional 1.2.6 fixtures marked as such; real `specify` 1.2.6 output must replace them before the phase report. |
+| Q-09 | Scope OK; terms reviewed by the human / Pack Owner | ADR-0003 stays; the deny-list is updated as review comments arrive. |
+| Q-10 | Add a sixth class `requirement` | spec.md §5 updated; domain, schema and DB migration 0002 updated; it never auto-resolves. |
+
+### Original questions
 
 | Q | Question | Proposed default until answered |
 |---|---|---|
@@ -78,6 +93,7 @@ Each WP is one PR (or less). Conventional Commits with `Implements:` / `Tests:` 
 | Q-06 | The spec pins Node 22 LTS; this machine has Node 24. | `.nvmrc` = 22 and `engines >=22`; CI must run 22. |
 | Q-07 | SDD §21 lists "human baseline data collected / go/no-go baselines recorded" in Phase 0 exit; spec.md §11 does not. Is this in Phase 0 platform scope? | Not built; recorded here as a difference to confirm (a data task, OPEN-17). |
 | Q-08 | AT-P0-08 needs **real** `/speckit.tasks` 1.2.6 output. Can we generate the fixtures with `specify` 1.2.6, or will you supply them? | Hand-written fixtures in the documented 1.2.6 format, marked as provisional, until real output is captured. |
+| Q-10 | spec.md §5 lists Decision classes clarification/consult/escalation/risk/gate, but FR-DEC-002 and SDD §8.6 also name **requirement** Decisions. Is "requirement" a sixth class, or a kind of clarification? | Not added. The five §5 classes are used; none of them can auto-resolve except consult. |
 | Q-09 | Review the initial core-neutrality deny-list (`packages/config/neutrality-denylist.txt`). | Generic embedded toolchain, RTOS, MCU and analyser names; platform infrastructure (Docker, Jira, GitHub, Jenkins, Keycloak, PostgreSQL) is **not** denied because spec §4 puts it in the core. |
 
 Notes:
@@ -89,4 +105,10 @@ Notes:
 | WP | Status |
 |---|---|
 | P0-WP1 | done locally on `phase-0/p0-wp1-monorepo` (uncommitted): workspace, strict TS, ESLint (no `any`, no `!`), Vitest + per-package coverage thresholds, `pnpm verify`, neutrality check + 12 tests (AT-P0-07 passes), ADR-0001–0003. Remaining: CI wiring (Q-01). |
+| P0-WP2 | done locally on `phase-0/p0-wp2-domain-db-audit`:
+- `@adlc/domain`: vocabularies, state machines, IDs, Decision invariants, hash chain. 100% line coverage; property-based tests.
+- `@adlc/schemas`: boundary schemas.
+- `@adlc/db`: Drizzle tables for every §5 entity, a partitioned append-only audit table, `AuditRepository`, and 11 PostgreSQL 16 integration tests.
+- ADR-0004 and ADR-0005.
+- Deferred: the WORM export (waits on Q-05); revoking UPDATE/DELETE/TRUNCATE from DB roles (P0-WP11). |
 | others | not started |

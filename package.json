@@ -13,12 +13,14 @@
     "test": "turbo run test",
     "test:coverage": "turbo run test:coverage",
     "check:neutrality": "tsx packages/config/src/cli.ts",
-    "verify": "pnpm lint && pnpm typecheck && pnpm test:coverage && pnpm check:neutrality"
+    "verify": "pnpm lint && pnpm typecheck && pnpm test:coverage && pnpm check:neutrality",
+    "db:migrate": "pnpm --filter @adlc/db run build && pnpm --filter @adlc/db run db:migrate"
   },
   "devDependencies": {
     "@types/node": "22.18.12",
     "@vitest/coverage-v8": "3.2.4",
     "eslint": "9.38.0",
+    "fast-check": "4.3.0",
     "tsx": "4.20.6",
     "turbo": "2.5.8",
     "typescript": "5.9.3",
