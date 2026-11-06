@@ -210,6 +210,8 @@ Decisions recorded in ADR-0014. The executor host role means the orchestrator co
 | Q-14 | 09:00–18:00 Mon–Fri, Asia/Kolkata, no holidays for now | `config/working-calendar.yaml` stays as is; the holiday calendar comes with the rota (OPEN-06/21). |
 | Q-08 | The human supplies real `specify` 1.2.6 output | AT-P0-08 stays "provisional fixtures" until the files arrive. |
 | Q-04 | Sandbox: Jira Cloud project `AGENSDLC` (pioneerindia.atlassian.net), GitHub `arbehera/agentic-factory`; Jenkins and Keycloak deployed fresh in Docker (no existing installation) | WP6 targets these. Credentials are never pasted in chat; the storage location is still to be agreed. |
-| Q-02 | URL to follow | Waiting for confirmation of which repository is the platform remote (see open question). |
-| Q-09 | Not answered | Deny-list review stays open. |
+| Q-02 | Platform remote: `https://github.com/arbehera/agentic-factory` | Phase 0 branches are pushed there, one PR per work package. A sandbox product repository for agent PRs is still needed for AT-P0-01/04 (WP6). |
+| Q-04 (credentials) | Local git-ignored `.env` file for the sandbox identities | WP6 documents the variable names; the vault replaces it with the pilot (NFR-001). |
+| Q-04 (Jenkins, Keycloak) | Added to the Compose stack | WP6 adds a pinned Jenkins image configured as code; Keycloak is already in Compose. |
+| Q-09 | Deny-list accepted as is | Q-09 closed; changes later by PR. |
 
