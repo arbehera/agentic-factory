@@ -16,7 +16,7 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
-    "picomatch": "4.0.4"
+    "picomatch": "4.0.7"
   },
   "devDependencies": {
     "@types/picomatch": "4.0.2"

@@ -29,7 +29,7 @@ const contentArb: fc.Arbitrary<AuditEventContent> = fc.record({
   beforeHash: fc.option(hex64, { nil: null }),
   afterHash: fc.option(hex64, { nil: null }),
   correlation: fc.record({ runId: fc.uuid(), taskKey: fc.string() }, { requiredKeys: [] }),
-}) as fc.Arbitrary<AuditEventContent>;
+});
 
 function buildChain(contents: AuditEventContent[]): ChainedAuditEvent[] {
   const out: ChainedAuditEvent[] = [];

@@ -1,5 +1,5 @@
 import { createAdapters, type SourceControl } from "@adlc/adapters";
-import { SoftwareEd25519Signer, type PlatformEnvironment } from "@adlc/attestation";
+import { SoftwareEd25519Signer } from "@adlc/attestation";
 import { SIGN_EVIDENCE_JOB, Worker, type Clock } from "@adlc/control-plane";
 import { createDb, createPool, JobQueue } from "@adlc/db";
 import type { ReviewerSets } from "@adlc/schemas";
@@ -40,8 +40,8 @@ export function buildSigner(
   deps: { reviewerSets: ReviewerSets; clock: Clock; logger: Logger; scm?: SourceControl },
 ): { worker: Worker; signer: SignerService; publicKeyPem: string; keyId: string; pool: pg.Pool } {
   const key = config.SIGNER_KEY_PEM
-    ? SoftwareEd25519Signer.fromPem(config.SIGNER_KEY_PEM, config.SIGNER_ENVIRONMENT as PlatformEnvironment)
-    : SoftwareEd25519Signer.generate(config.SIGNER_ENVIRONMENT as PlatformEnvironment);
+    ? SoftwareEd25519Signer.fromPem(config.SIGNER_KEY_PEM, config.SIGNER_ENVIRONMENT)
+    : SoftwareEd25519Signer.generate(config.SIGNER_ENVIRONMENT);
   const scm = deps.scm ?? createAdapters(config).scm;
   const pool = createPool(config.DATABASE_URL, { onIdleError: (err) => {
     deps.logger.warn({ err: err.message }, "idle database connection closed");

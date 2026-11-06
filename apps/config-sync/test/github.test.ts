@@ -115,7 +115,7 @@ describe("FR-GH-001 GitHub configuration client", () => {
       const r = routes[`${method} ${path}`] ?? { status: 404, body: { message: "Not Found" } };
       return Promise.resolve(new Response(r.body === undefined ? null : JSON.stringify(r.body), { status: r.status }));
     };
-    return { client: new GithubConfigClient("org/repo", "t0ken", fetchImpl as typeof fetch), calls };
+    return { client: new GithubConfigClient("org/repo", "t0ken", fetchImpl), calls };
   }
 
   it("reads owner type, emptiness, managed rulesets and CODEOWNERS", async () => {

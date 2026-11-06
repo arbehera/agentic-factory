@@ -27,8 +27,14 @@ function sendJson(res: ServerResponse, status: number, body: unknown): void {
   res.writeHead(status, { "content-type": "application/json" }).end(JSON.stringify(body));
 }
 
-/** Builds a per-request MCP server bound to one authenticated run and one tool server. */
+/**
+ * Builds a per-request MCP server bound to one authenticated run and one tool server. Uses the
+ * low-level `Server` on purpose: the tool list is computed per run from its role policy and every
+ * call goes through the gateway's checks, which McpServer's static registration cannot express.
+ */
+// eslint-disable-next-line @typescript-eslint/no-deprecated -- low-level Server is the SDK's documented path for advanced use
 function mcpServerFor(gateway: Gateway, run: GatewaySessionContext, server: string): Server {
+  // eslint-disable-next-line @typescript-eslint/no-deprecated -- see above
   const mcp = new Server({ name: `adlc-${server}`, version: "0.1.0" }, { capabilities: { tools: {} } });
   mcp.setRequestHandler(ListToolsRequestSchema, () => ({
     tools: gateway.listTools(run, server).map((t) => ({
@@ -69,7 +75,8 @@ export async function handleMcpRequest(gateway: Gateway, server: string, req: In
     return;
   }
   const mcp = mcpServerFor(gateway, run, server);
-  const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: true });
+  // No sessionIdGenerator: stateless mode (one transport per request; the bearer token is the session).
+  const transport = new StreamableHTTPServerTransport({ enableJsonResponse: true });
   res.on("close", () => {
     void transport.close();
     void mcp.close();

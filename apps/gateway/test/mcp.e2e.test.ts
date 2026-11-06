@@ -1,7 +1,6 @@
 import "reflect-metadata";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
-import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
 import type { INestApplication } from "@nestjs/common";
 import { NestFactory } from "@nestjs/core";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -30,7 +29,7 @@ describe.skipIf(skipIntegration)("P0-WP5 MCP over HTTP", () => {
     const c = new Client({ name: "agent-runtime-test", version: "0.0.0" });
     const transport = new StreamableHTTPClientTransport(new URL(`${base}/mcp/${server}`), { requestInit: { headers: { authorization: `Bearer ${token}` } } });
     // The SDK's own types disagree under exactOptionalPropertyTypes (sessionId?: string vs string); runtime is fine.
-    await c.connect(transport as unknown as Transport);
+    await c.connect(transport);
     return c;
   }
 

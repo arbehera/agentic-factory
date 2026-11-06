@@ -22,8 +22,8 @@
     "@adlc/pack-sdk": "workspace:*",
     "@adlc/schemas": "workspace:*",
     "@adlc/telemetry": "workspace:*",
-    "nodemailer": "6.10.1",
-    "zod": "4.1.12"
+    "nodemailer": "10.3.1",
+    "zod": "4.6.7"
   },
   "devDependencies": {
     "@adlc/control-plane": "workspace:*",
@@ -31,8 +31,7 @@
     "@adlc/orchestrator": "workspace:*",
     "@adlc/testing": "workspace:*",
     "@types/node": "22.18.12",
-    "@types/nodemailer": "6.4.17",
     "@types/smtp-server": "3.5.10",
-    "smtp-server": "3.13.6"
+    "smtp-server": "3.21.3"
   }
 }

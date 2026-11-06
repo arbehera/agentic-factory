@@ -45,5 +45,5 @@ export const toolId = (t: Pick<ToolDef, "server" | "name">): string => `${t.serv
 
 /** Helper that keeps the handler's argument type tied to its schema. */
 export function defineTool<S extends z.ZodType>(def: Omit<ToolDef<z.output<S>>, "input"> & { input: S }): ToolDef {
-  return def as unknown as ToolDef;
+  return def;
 }

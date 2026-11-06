@@ -61,7 +61,7 @@ describe("FR-EVD-002 signing preconditions", () => {
           requiredReviewers: x.reviewerOk ? ["dummy-reviewer"] : ["other"],
           verdicts: [verdict({ verdict: x.approve ? "approve" : "request-changes", headSha: x.shaOk ? HEAD : "c".repeat(40) })],
           modelCalls: x.callLogged ? [{ id: "msg_1", runId: x.sameRun ? "run-r" : "run-x" }] : [],
-          checks: x.checkState === "missing" ? [] : [{ context: "adlc/verify", state: x.checkState as "success" }],
+          checks: x.checkState === "missing" ? [] : [{ context: "adlc/verify", state: x.checkState }],
         });
         const allHold = x.reviewerOk && x.approve && x.shaOk && x.callLogged && x.sameRun && x.checkState === "success";
         expect(evaluateSigning(f).sign).toBe(allHold);
