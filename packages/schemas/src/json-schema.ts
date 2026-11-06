@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { processPackManifestSchema, productProfileSchema, techPackManifestSchema } from "./packs.js";
+import { rolePolicySchema } from "./role-policy.js";
 import { tasksImportFileSchema } from "./tasks-import.js";
 
 /**
@@ -12,6 +13,7 @@ export function jsonSchemas(): Record<string, unknown> {
     "product-profile.schema.json": z.toJSONSchema(productProfileSchema, { io: "input" }),
     "tech-pack.schema.json": z.toJSONSchema(techPackManifestSchema),
     "process-pack.schema.json": z.toJSONSchema(processPackManifestSchema),
+    "role-policy.schema.json": z.toJSONSchema(rolePolicySchema, { io: "input" }),
   };
 }
 

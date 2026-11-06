@@ -222,6 +222,8 @@ export const decision = pgTable(
     question: text("question").notNull(),
     options: jsonb("options").$type<string[]>().notNull().default([]),
     owner: text("owner").notNull(),
+    /** `<actor kind>:<id>` of whoever raised it; a run may never answer its own Decision. */
+    raisedBy: text("raised_by").notNull(),
     timeboxMinutes: integer("timebox_minutes").notNull(),
     dueAt: ts("due_at").notNull(),
     reversible: boolean("reversible").notNull(),
@@ -382,3 +384,26 @@ export const controlFlag = pgTable("control_flag", {
   setBy: text("set_by").notNull(),
   setAt: ts("set_at").notNull(),
 });
+
+/**
+ * Per-run gateway credentials (ADR-0010). Only the SHA-256 of the bearer token is stored; the
+ * token itself is handed to the run's container once and never logged.
+ */
+export const gatewaySession = pgTable(
+  "gateway_session",
+  {
+    tokenHash: text("token_hash").primaryKey(),
+    runId: uuid("run_id").notNull().references(() => agentRun.id),
+    role: text("role").notNull(),
+    projectId: uuid("project_id").notNull().references(() => project.id),
+    taskKey: text("task_key"),
+    fencingToken: bigint("fencing_token", { mode: "bigint" }),
+    issuedAt: ts("issued_at").notNull(),
+    expiresAt: ts("expires_at").notNull(),
+    revokedAt: ts("revoked_at"),
+  },
+  (t) => [
+    index("gateway_session_run_idx").on(t.runId),
+    check("gateway_session_fence_chk", sql`(${t.taskKey} is null) = (${t.fencingToken} is null)`),
+  ],
+);

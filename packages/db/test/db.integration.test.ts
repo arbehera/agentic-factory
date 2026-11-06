@@ -36,14 +36,14 @@ describe.skipIf(skipIntegration)("P0-WP2 database (PostgreSQL 16)", () => {
     await t.close();
   });
 
-  it("creates a table for every spec.md §5 entity (plus control_flag, ADR-0009), and re-running migrations is a no-op", async () => {
+  it("creates a table for every spec.md §5 entity (plus control_flag and gateway_session, ADR-0009/0010), and re-running migrations is a no-op", async () => {
     await runMigrations(db);
     const { rows } = await pool.query<{ t: string }>(
       "select tablename as t from pg_tables where schemaname = 'public' and tablename not like 'audit_event_%'",
     );
     expect(rows.map((r) => r.t).sort()).toEqual([
       "agent_definition", "agent_run", "audit_event", "budget_ledger", "component_lock", "control_flag", "decision",
-      "evidence_record", "gate", "lease", "notification", "pack_version", "product_profile", "project",
+      "evidence_record", "gate", "gateway_session", "lease", "notification", "pack_version", "product_profile", "project",
       "step_record", "test_target_lease", "trace_link", "trace_node",
     ]);
   });
@@ -155,8 +155,8 @@ describe.skipIf(skipIntegration)("P0-WP2 database (PostgreSQL 16)", () => {
 
   describe("FR-DEC-002 Decision storage invariants", () => {
     const insert = (id: string, cls: string, reversible: boolean, autoResolve: boolean) =>
-      db.execute(sql`insert into decision (id, project_id, class, route, question, owner, timebox_minutes, due_at, reversible, auto_resolve)
-        values (${id}, ${projectId}, ${cls}, 'human', 'q', 'owner', 60, now() + interval '1 hour', ${reversible}, ${autoResolve})`);
+      db.execute(sql`insert into decision (id, project_id, class, route, question, owner, raised_by, timebox_minutes, due_at, reversible, auto_resolve)
+        values (${id}, ${projectId}, ${cls}, 'human', 'q', 'owner', 'service:test', 60, now() + interval '1 hour', ${reversible}, ${autoResolve})`);
 
     it("FR-DEC-002 the database rejects auto-resolving or reversible gate Decisions", async () => {
       // Violates both checks; PostgreSQL reports whichever it evaluates first.

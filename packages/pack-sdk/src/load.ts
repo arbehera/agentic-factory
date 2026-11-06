@@ -38,7 +38,8 @@ function formatPath(p: readonly PropertyKey[]): string {
   return p.reduce<string>((acc, k) => (typeof k === "number" ? `${acc}[${k}]` : acc ? `${acc}.${String(k)}` : String(k)), "");
 }
 
-function loadYaml<S extends z.ZodType>(schema: S, text: string, source: string): z.output<S> {
+/** Parses untrusted YAML (no aliases, no duplicate keys) and validates it against `schema`. */
+export function loadYamlContract<S extends z.ZodType>(schema: S, text: string, source: string): z.output<S> {
   let doc: unknown;
   try {
     doc = parseYaml(text, { maxAliasCount: 0, uniqueKeys: true, merge: false, prettyErrors: true });
@@ -56,15 +57,15 @@ function loadYaml<S extends z.ZodType>(schema: S, text: string, source: string):
 }
 
 export function loadProductProfile(text: string, source = PRODUCT_PROFILE_PATH): ProductProfile {
-  return loadYaml(productProfileSchema, text, source);
+  return loadYamlContract(productProfileSchema, text, source);
 }
 
 export function loadTechPackManifest(text: string, source = "pack.yaml"): TechPackManifest {
-  return loadYaml(techPackManifestSchema, text, source);
+  return loadYamlContract(techPackManifestSchema, text, source);
 }
 
 export function loadProcessPackManifest(text: string, source = "pack.yaml"): ProcessPackManifest {
-  return loadYaml(processPackManifestSchema, text, source);
+  return loadYamlContract(processPackManifestSchema, text, source);
 }
 
 /** Reads `.adlc/product-profile.yaml` from a product repository checkout. */

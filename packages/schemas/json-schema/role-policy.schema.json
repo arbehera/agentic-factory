@@ -1,0 +1,110 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "role": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]*$"
+    },
+    "tools": {
+      "minItems": 1,
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z]+\\.[a-z_]+$"
+      }
+    },
+    "jira": {
+      "default": {},
+      "type": "object",
+      "properties": {
+        "createIssueTypes": {
+          "default": [],
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "transitions": {
+          "default": [],
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "from": {
+                "type": "string",
+                "minLength": 1
+              },
+              "to": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "from",
+              "to"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "github": {
+      "default": {},
+      "type": "object",
+      "properties": {
+        "branches": {
+          "default": [],
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^(task|spec)\\/[A-Za-z0-9{}._-]+$"
+          }
+        },
+        "writePaths": {
+          "default": [],
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^(?!\\/)(?!.*(^|\\/)\\.\\.(\\/|$))[A-Za-z0-9._*/{}-]+$"
+          }
+        },
+        "blockedPaths": {
+          "default": [],
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^(?!\\/)(?!.*(^|\\/)\\.\\.(\\/|$))[A-Za-z0-9._*/{}-]+$"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "decisions": {
+      "default": {},
+      "type": "object",
+      "properties": {
+        "answerClasses": {
+          "default": [],
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "clarification",
+              "consult",
+              "escalation"
+            ]
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "role",
+    "tools"
+  ],
+  "additionalProperties": false
+}

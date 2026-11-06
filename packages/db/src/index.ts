@@ -5,6 +5,8 @@ export * from "./audit-table.js";
 export * from "./budget-ledger-repository.js";
 export * from "./client.js";
 export * from "./control-flag-repository.js";
+export * from "./decision-repository.js";
+export * from "./gateway-session-repository.js";
 export * from "./lease-repository.js";
 export * from "./pack-version-repository.js";
 export * from "./schema.js";
