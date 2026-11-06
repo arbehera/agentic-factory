@@ -429,6 +429,10 @@ importers:
         version: 8.15.5
 
   packages/adapters:
+    dependencies:
+      zod:
+        specifier: 4.1.12
+        version: 4.1.12
     devDependencies:
       '@types/node':
         specifier: 22.18.12
@@ -456,12 +460,18 @@ importers:
 
   packages/control-plane:
     dependencies:
+      '@adlc/adapters':
+        specifier: workspace:*
+        version: link:../adapters
       '@adlc/db':
         specifier: workspace:*
         version: link:../db
       '@adlc/domain':
         specifier: workspace:*
         version: link:../domain
+      '@adlc/schemas':
+        specifier: workspace:*
+        version: link:../schemas
       '@adlc/telemetry':
         specifier: workspace:*
         version: link:../telemetry

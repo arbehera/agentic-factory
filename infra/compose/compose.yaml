@@ -19,6 +19,10 @@ x-app-db: &app-db
   # alias, which the failover drill moves to the promoted replica (AT-P0-06).
   DATABASE_URL: postgres://adlc_app:${APP_DB_PASSWORD:?}@db:5432/adlc
 
+x-object-store: &object-store
+  OBJECT_STORE_ENDPOINT: http://seaweedfs:8333
+  OBJECT_STORE_BUCKET: adlc-audit
+
 x-health: &health
   interval: 5s
   timeout: 3s
@@ -104,7 +108,7 @@ services:
     volumes:
       - ${DOCKER_SOCKET:?}:/var/run/docker.sock
     environment:
-      <<: *app-db
+      <<: [*app-db, *object-store]
       ADAPTERS: dev-fakes
       FAKES_URL: http://dev-fakes:4000
       FAKES_TOKEN: ${FAKES_TOKEN:?}
@@ -121,10 +125,17 @@ services:
       DISPATCH_INTERVAL_MS: "2000"
       SUPERVISE_INTERVAL_MS: "2000"
       INTERNAL_API_TOKEN: ${INTERNAL_API_TOKEN:?}
+      # Write-once audit/evidence export (NFR-006, ADR-0015), as the exporter identity: it can add
+      # objects but not delete locked versions, shorten their retention or delete the bucket.
+      OBJECT_STORE_ACCESS_KEY_ID: adlc-exporter
+      OBJECT_STORE_SECRET_ACCESS_KEY: ${OBJECT_STORE_EXPORTER_SECRET:?}
+      AUDIT_EXPORT_RETENTION_DAYS: ${AUDIT_EXPORT_RETENTION_DAYS:?}
+      AUDIT_EXPORT_EVERY_MS: ${AUDIT_EXPORT_EVERY_MS:-86400000}
     ports: ["127.0.0.1:3100:3000"]
     depends_on:
       migrate: { condition: service_completed_successfully }
       gateway: { condition: service_healthy }
+      objectstore-init: { condition: service_completed_successfully }
     healthcheck: { <<: *health, test: [CMD, node, -e, "fetch('http://localhost:3000/ready').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"] }
 
   # Second replica: same image and config; the PostgreSQL advisory lock makes one of them leader.
@@ -210,11 +221,37 @@ services:
   seaweedfs:
     image: ${SEAWEEDFS_IMAGE:?}
     restart: unless-stopped
-    command: [server, -dir=/data, -s3, -s3.port=8333]
+    # S3 identities (ADR-0015): no anonymous access. adlc-admin creates the bucket (one-shot
+    # objectstore-init only); adlc-exporter reads and writes objects in adlc-audit and nothing else.
+    environment:
+      ADMIN_SECRET: ${OBJECT_STORE_ADMIN_SECRET:?}
+      EXPORTER_SECRET: ${OBJECT_STORE_EXPORTER_SECRET:?}
+    entrypoint:
+      - sh
+      - -c
+      - |
+        umask 077
+        printf '{"identities":[{"name":"adlc-admin","credentials":[{"accessKey":"adlc-admin","secretKey":"%s"}],"actions":["Admin","Read","Write","List"]},{"name":"adlc-exporter","credentials":[{"accessKey":"adlc-exporter","secretKey":"%s"}],"actions":["Read:adlc-audit","Write:adlc-audit","List:adlc-audit"]}]}' "$$ADMIN_SECRET" "$$EXPORTER_SECRET" > /tmp/s3.json
+        unset ADMIN_SECRET EXPORTER_SECRET
+        exec weed server -dir=/data -s3 -s3.port=8333 -s3.config=/tmp/s3.json
     volumes:
       - seaweedfs:/data
     networks: [adlc]
     ports: ["127.0.0.1:8333:8333"]
+
+  # Creates the locked bucket with the admin identity, then exits; no running service holds the
+  # admin secret (ADR-0015).
+  objectstore-init:
+    <<: *platform
+    restart: "no"
+    depends_on:
+      seaweedfs: { condition: service_started }
+    command: [node, apps/orchestrator/dist/audit-export-cli.js, init-bucket]
+    environment:
+      <<: *object-store
+      OBJECT_STORE_ACCESS_KEY_ID: adlc-admin
+      OBJECT_STORE_SECRET_ACCESS_KEY: ${OBJECT_STORE_ADMIN_SECRET:?}
+      AUDIT_EXPORT_RETENTION_DAYS: ${AUDIT_EXPORT_RETENTION_DAYS:?}
 
 networks:
   adlc: {}

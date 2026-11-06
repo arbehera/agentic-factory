@@ -27,9 +27,11 @@ set +a
 (
   umask 077
   touch "$env_file"
-  for key in POSTGRES_PASSWORD REPLICATION_PASSWORD APP_DB_PASSWORD FAKES_TOKEN INTERNAL_API_TOKEN KEYCLOAK_ADMIN_PASSWORD ADLC_DEV_USER_PASSWORD MODEL_API_KEY; do
+  for key in POSTGRES_PASSWORD REPLICATION_PASSWORD APP_DB_PASSWORD FAKES_TOKEN INTERNAL_API_TOKEN KEYCLOAK_ADMIN_PASSWORD ADLC_DEV_USER_PASSWORD MODEL_API_KEY OBJECT_STORE_ADMIN_SECRET OBJECT_STORE_EXPORTER_SECRET; do
     grep -q "^$key=" "$env_file" || { echo "$key=$(openssl rand -hex 24)" >>"$env_file"; echo "dev-up: generated $key in $env_file"; }
   done
+  # Dev-only retention of exported audit objects; the real period is an ISMS decision (ADR-0015).
+  grep -q "^AUDIT_EXPORT_RETENTION_DAYS=" "$env_file" || echo "AUDIT_EXPORT_RETENTION_DAYS=1" >>"$env_file"
 )
 
 echo "dev-up: building the agent runtime image"

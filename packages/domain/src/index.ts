@@ -1,5 +1,6 @@
 export * from "./agent-run.js";
 export * from "./audit.js";
+export * from "./audit-export.js";
 export * from "./budget.js";
 export * from "./decision.js";
 export * from "./errors.js";

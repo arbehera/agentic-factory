@@ -1,5 +1,5 @@
 import { createDb, runMigrations } from "@adlc/db";
-import type { IssueTracker, SourceControl } from "@adlc/adapters";
+import type { IssueTracker, ObjectStore, SourceControl } from "@adlc/adapters";
 import type { ReviewerSets } from "@adlc/schemas";
 import type { ExecutorBackend } from "@adlc/executor";
 import { createLogger, type Logger } from "@adlc/telemetry";
@@ -35,7 +35,7 @@ export async function harness(
   env: Record<string, string> = {},
   executor?: ExecutorBackend,
   issues?: IssueTracker,
-  extra: { scm?: SourceControl; reviewerSets?: ReviewerSets } = {},
+  extra: { scm?: SourceControl; reviewerSets?: ReviewerSets; objectStore?: ObjectStore } = {},
 ): Promise<Harness> {
   const db = await freshDatabase({ migrate: (pool) => runMigrations(createDb(pool)) });
   const clock = new ManualClock(T0);

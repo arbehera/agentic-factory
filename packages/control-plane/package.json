@@ -16,8 +16,10 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
+    "@adlc/adapters": "workspace:*",
     "@adlc/db": "workspace:*",
     "@adlc/domain": "workspace:*",
+    "@adlc/schemas": "workspace:*",
     "@adlc/telemetry": "workspace:*"
   },
   "devDependencies": {

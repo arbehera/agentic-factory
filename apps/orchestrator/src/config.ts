@@ -38,6 +38,15 @@ export const orchestratorConfigSchema = z.object({
   REVIEW_FLOW_INTERVAL_MS: z.coerce.number().int().positive().default(5_000),
   /** Bearer token for the internal routes (live logs for the portal API). Unset: routes off. */
   INTERNAL_API_TOKEN: z.string().min(32).optional(),
+  /** Write-once audit/evidence export (NFR-006, ADR-0015). Unset endpoint: export off (logged). */
+  OBJECT_STORE_ENDPOINT: z.url().optional(),
+  OBJECT_STORE_BUCKET: z.string().optional(),
+  OBJECT_STORE_REGION: z.string().optional(),
+  OBJECT_STORE_ACCESS_KEY_ID: z.string().optional(),
+  OBJECT_STORE_SECRET_ACCESS_KEY: z.string().optional(),
+  /** Compliance retention of exported objects. No default: the period is an ISMS decision. */
+  AUDIT_EXPORT_RETENTION_DAYS: z.coerce.number().int().positive().max(36_500).optional(),
+  AUDIT_EXPORT_EVERY_MS: z.coerce.number().int().positive().default(86_400_000),
 });
 export type OrchestratorConfig = z.infer<typeof orchestratorConfigSchema>;
 
@@ -49,6 +58,7 @@ export function loadConfig(env: Record<string, string | undefined>): Orchestrato
   const r = orchestratorConfigSchema
     .refine((c) => c.SANDBOX_SLOTS <= c.EXECUTOR_SLOTS, { path: ["SANDBOX_SLOTS"], message: "must not exceed EXECUTOR_SLOTS" })
     .refine((c) => !c.AGENT_IMAGE || c.AGENT_GATEWAY_URL, { path: ["AGENT_GATEWAY_URL"], message: "is required when AGENT_IMAGE is set" })
+    .refine((c) => !c.OBJECT_STORE_ENDPOINT || c.AUDIT_EXPORT_RETENTION_DAYS, { path: ["AUDIT_EXPORT_RETENTION_DAYS"], message: "is required with OBJECT_STORE_ENDPOINT (retention per ISMS)" })
     .refine((c) => !c.DISPATCH_ROLE || c.ADAPTERS, { path: ["DISPATCH_ROLE"], message: "needs ADAPTERS (the ready source reads Jira)" })
     .safeParse(env);
   if (!r.success) {

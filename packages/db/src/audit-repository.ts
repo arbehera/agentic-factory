@@ -66,6 +66,17 @@ export class AuditRepository {
     return rows.map(toEvent);
   }
 
+  /**
+   * Events from `fromSeq` on, read under the chain lock so no append still in flight can commit
+   * below the cut afterwards (the WORM export, ADR-0015).
+   */
+  async listSealable(fromSeq: number): Promise<ChainedAuditEvent[]> {
+    return this.db.transaction(async (tx) => {
+      await tx.execute(sql`select pg_advisory_xact_lock(${ADVISORY_LOCKS.auditChain})`);
+      return new AuditRepository(tx).list({ fromSeq });
+    });
+  }
+
   /** Audit events correlated with a run, oldest first (FR-POR-001 run detail). */
   async forRun(runId: string, limit = 500): Promise<ChainedAuditEvent[]> {
     const rows = await this.db

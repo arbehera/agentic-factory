@@ -13,12 +13,12 @@ import {
   ProjectRepository,
   type Db,
 } from "@adlc/db";
-import type { IssueTracker, SourceControl } from "@adlc/adapters";
+import type { IssueTracker, ObjectStore, SourceControl } from "@adlc/adapters";
 import type { ReviewerSets } from "@adlc/schemas";
 import type { ExecutorBackend, LogLine } from "@adlc/executor";
 import type { Logger } from "@adlc/telemetry";
 import type pg from "pg";
-import { BudgetService, HeartbeatService, KillSwitch, Worker, type Clock } from "@adlc/control-plane";
+import { AuditExporter, BudgetService, HeartbeatService, KillSwitch, Worker, type Clock } from "@adlc/control-plane";
 import { ConfigError, type OrchestratorConfig } from "./config.js";
 import { Dispatcher, type CandidateSource } from "./dispatcher.js";
 import { LeaderElector } from "./leader-elector.js";
@@ -48,6 +48,8 @@ export interface Orchestrator {
   worker: Worker | null;
   /** Present when adapters, reviewer sets and a dispatch role are configured (AT-P0-01). */
   reviewFlow: ReviewFlow | null;
+  /** Present when an object store is configured (NFR-006 write-once export). */
+  auditExporter: AuditExporter | null;
   /** Follows a run's container log; null when this replica has no executor or the run no container. */
   runLogs(runId: string): Promise<AsyncIterable<LogLine> | null>;
   /** Starts leader election (and the leader jobs it brings) and this replica's worker. */
@@ -55,10 +57,15 @@ export interface Orchestrator {
   close(): Promise<void>;
 }
 
+function requireRetention(config: OrchestratorConfig): number {
+  if (!config.AUDIT_EXPORT_RETENTION_DAYS) throw new ConfigError("the audit export needs AUDIT_EXPORT_RETENTION_DAYS (retention per ISMS)");
+  return config.AUDIT_EXPORT_RETENTION_DAYS;
+}
+
 /** Composition root: wires repositories and services. Deterministic — no LLM anywhere (hard rule 1). */
 export function buildOrchestrator(
   config: OrchestratorConfig,
-  deps: { clock: Clock; logger: Logger; candidates?: CandidateSource; executor?: ExecutorBackend; issues?: IssueTracker; scm?: SourceControl; reviewerSets?: ReviewerSets },
+  deps: { clock: Clock; logger: Logger; candidates?: CandidateSource; executor?: ExecutorBackend; issues?: IssueTracker; scm?: SourceControl; reviewerSets?: ReviewerSets; objectStore?: ObjectStore },
 ): Orchestrator {
   const pool = createPool(config.DATABASE_URL, { onIdleError: (err) => {
     deps.logger.warn({ err: err.message }, "idle database connection closed");
@@ -127,6 +134,9 @@ export function buildOrchestrator(
       });
     }
   }
+  const auditExporter = deps.objectStore
+    ? new AuditExporter(db, deps.objectStore, { retentionDays: requireRetention(config), everyMs: config.AUDIT_EXPORT_EVERY_MS }, deps.clock, deps.logger)
+    : null;
   const reaper = new Reaper(leases, runs, deps.clock);
   const elector = new LeaderElector(config.DATABASE_URL, ADVISORY_LOCKS.dispatcherLeader, config.LEADER_POLL_MS, deps.logger);
   const log = deps.logger;
@@ -149,6 +159,7 @@ export function buildOrchestrator(
         },
       },
       { name: "audit-partitions", intervalMs: config.MAINTENANCE_INTERVAL_MS, run: () => audit.ensurePartitions(deps.clock.now()) },
+      ...(auditExporter ? [{ name: "audit-export", intervalMs: Math.min(config.MAINTENANCE_INTERVAL_MS, config.AUDIT_EXPORT_EVERY_MS), run: () => auditExporter.exportIfDue() }] : []),
       ...executorJobs,
     ],
     deps.logger,
@@ -168,6 +179,7 @@ export function buildOrchestrator(
     supervisor,
     worker,
     reviewFlow,
+    auditExporter,
     runLogs: async (runId) => {
       const run = await runs.get(runId);
       if (!deps.executor || !run?.containerId) return null;

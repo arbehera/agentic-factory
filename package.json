@@ -19,7 +19,8 @@
     "dev:down": "bash scripts/dev/dev-down.sh",
     "test:load": "bash scripts/dev/load-test.sh",
     "test:failover": "bash scripts/dev/failover-drill.sh",
-    "test:e2e": "bash scripts/dev/e2e.sh"
+    "test:e2e": "bash scripts/dev/e2e.sh",
+    "audit:verify": "bash scripts/dev/audit-verify.sh"
   },
   "devDependencies": {
     "@types/node": "22.18.12",
