@@ -1,5 +1,5 @@
 import type { IssueTracker } from "@adlc/adapters";
-import { agentRunMachine, isLeaseLive, NOTIFICATION_EVENTS, stateHash, taskStatusMachine, type AgentRunState, type TaskStatus } from "@adlc/domain";
+import { agentRunMachine, isLeaseLive, NOTIFICATION_EVENTS, type AgentRunState } from "@adlc/domain";
 import {
   AgentDefinitionRepository,
   AgentRunRepository,
@@ -15,6 +15,7 @@ import { GATEWAY_TOKEN_ENV, RUN_EXIT_CODES, type ExecutorBackend, type RunHandle
 import type { Clock } from "@adlc/control-plane";
 import type { Logger } from "@adlc/telemetry";
 import { ORCHESTRATOR_ACTOR, retireRun } from "./runs.js";
+import { JiraTaskStatus } from "./task-status.js";
 
 export const START_RUN_JOB = "start-run";
 
@@ -42,6 +43,7 @@ export class RunLauncher {
   private readonly sessions: GatewaySessionRepository;
   private readonly definitions: AgentDefinitionRepository;
   private readonly projects: ProjectRepository;
+  private readonly tasks: JiraTaskStatus | null;
 
   constructor(
     db: Db,
@@ -49,12 +51,15 @@ export class RunLauncher {
     private readonly config: LaunchConfig,
     private readonly clock: Clock,
     private readonly logger: Logger,
+    /** The adlc-orchestrator Jira identity; without it task statuses are not moved. */
+    issues?: IssueTracker,
   ) {
     this.runs = new AgentRunRepository(db);
     this.leases = new LeaseRepository(db);
     this.sessions = new GatewaySessionRepository(db);
     this.definitions = new AgentDefinitionRepository(db);
     this.projects = new ProjectRepository(db);
+    this.tasks = issues ? new JiraTaskStatus(issues, new AuditRepository(db)) : null;
   }
 
   async launch(runId: string): Promise<LaunchOutcome> {
@@ -65,6 +70,16 @@ export class RunLauncher {
     if (!lease || lease.runId !== run.id || !isLeaseLive(lease, now)) {
       await retireRun(this.runs, run.id, "lease lost before the container started", now);
       return "stale";
+    }
+    if (this.tasks) {
+      // Claim in Jira (S0-S2): To Do -> In Progress; a resumed task is already In Progress. Any
+      // other status means a human moved the task since it was offered, and the human wins.
+      const claim = await this.tasks.move(run.taskKey, "In Progress", `claimed by run ${run.id}`, { projectId: run.projectId, runId });
+      if (claim.status !== "In Progress") {
+        await this.leases.release({ taskKey: run.taskKey, fencingToken: lease.fencingToken }, `task is ${claim.status} in Jira`, now);
+        await retireRun(this.runs, run.id, `task is ${claim.status} in Jira`, now);
+        return "stale";
+      }
     }
     const log = this.logger.child({ projectId: run.projectId, runId, taskKey: run.taskKey });
     const [definition, project] = await Promise.all([this.definitions.get(run.agentDefinitionId), this.projects.get(run.projectId)]);
@@ -129,22 +144,22 @@ export class Supervisor {
   private readonly sessions: GatewaySessionRepository;
   private readonly definitions: AgentDefinitionRepository;
   private readonly notifications: NotificationRepository;
-  private readonly audit: AuditRepository;
+  private readonly tasks: JiraTaskStatus | null;
 
   constructor(
     db: Db,
     private readonly executor: ExecutorBackend,
     private readonly clock: Clock,
     private readonly logger: Logger,
-    /** The adlc-orchestrator Jira identity; absent until the real client exists (Q-04). */
-    private readonly issues?: IssueTracker,
+    /** The adlc-orchestrator Jira identity; without it task statuses are not moved. */
+    issues?: IssueTracker,
   ) {
     this.runs = new AgentRunRepository(db);
     this.leases = new LeaseRepository(db);
     this.sessions = new GatewaySessionRepository(db);
     this.definitions = new AgentDefinitionRepository(db);
     this.notifications = new NotificationRepository(db);
-    this.audit = new AuditRepository(db);
+    this.tasks = issues ? new JiraTaskStatus(issues, new AuditRepository(db)) : null;
   }
 
   async tick(): Promise<SupervisedExit[]> {
@@ -178,9 +193,20 @@ export class Supervisor {
       }
       if (to === "succeeded" || to === "stopped") await this.executor.delete(handle);
       else await this.escalateToHuman(run, to, reason, now);
+      if (to === "succeeded") await this.handOverForReview(run);
       ended.push({ runId: run.id, state: to, reason });
     }
     return ended;
+  }
+
+  /** The run's pull request is open: the task waits for review (S4 -> In Review). */
+  private async handOverForReview(run: AgentRunRow): Promise<void> {
+    if (!this.tasks || !run.taskKey) return;
+    try {
+      await this.tasks.move(run.taskKey, "In Review", `run ${run.id} succeeded`, { projectId: run.projectId, runId: run.id });
+    } catch (err) {
+      this.logger.warn({ taskKey: run.taskKey, err: (err as Error).message }, "could not move the task to In Review");
+    }
   }
 
   private async escalateToHuman(run: AgentRunRow, state: AgentRunState, reason: string, now: Date): Promise<void> {
@@ -200,21 +226,9 @@ export class Supervisor {
       },
       now,
     );
-    if (!this.issues || !run.taskKey) return;
+    if (!this.tasks || !run.taskKey) return;
     try {
-      // Re-read before writing (hard rule 4); a human edit in between wins.
-      const issue = await this.issues.getIssue(run.taskKey);
-      if (!taskStatusMachine.canTransition(issue.status as TaskStatus, "Needs Human")) return;
-      const after = await this.issues.transition(run.taskKey, "Needs Human", issue.version);
-      await this.audit.append({
-        actor: ORCHESTRATOR_ACTOR,
-        action: "task.status",
-        target: `task:${run.taskKey}`,
-        reason: `${issue.status} -> Needs Human: run ${run.id} ${state}`,
-        beforeHash: stateHash({ key: issue.key, status: issue.status, version: issue.version }),
-        afterHash: stateHash({ key: after.key, status: after.status, version: after.version }),
-        correlation: { projectId: run.projectId, runId: run.id, taskKey: run.taskKey },
-      });
+      await this.tasks.move(run.taskKey, "Needs Human", `run ${run.id} ${state}`, { projectId: run.projectId, runId: run.id });
     } catch (err) {
       this.logger.warn({ taskKey: run.taskKey, err: (err as Error).message }, "could not move the task to Needs Human; the notification was raised");
     }

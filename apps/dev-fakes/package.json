@@ -1,0 +1,28 @@
+{
+  "name": "@adlc/dev-fakes",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "start": "node dist/main.js"
+  },
+  "dependencies": {
+    "@adlc/testing": "workspace:*",
+    "@adlc/telemetry": "workspace:*",
+    "zod": "4.1.12"
+  },
+  "devDependencies": {
+    "@adlc/adapters": "workspace:*",
+    "@types/node": "22.18.12"
+  }
+}

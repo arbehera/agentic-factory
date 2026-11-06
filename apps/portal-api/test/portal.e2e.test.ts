@@ -23,6 +23,7 @@ describe.skipIf(skipIntegration)("FR-POR-001/002/004 Agent Operations Portal API
   let sign: (claims: Record<string, unknown>, opts?: { audience?: string; expiresIn?: string }) => Promise<string>;
   let runId: string;
   let notificationId: string;
+  let failMidStream = false;
 
   beforeAll(async () => {
     t = await freshDatabase({ migrate: (pool) => runMigrations(createDb(pool)) });
@@ -54,7 +55,12 @@ describe.skipIf(skipIntegration)("FR-POR-001/002/004 Agent Operations Portal API
         .setIssuedAt()
         .setExpirationTime(opts.expiresIn ?? "5m")
         .sign(privateKey);
-    const logs: RunLogSource = { follow: (rid, containerId) => exec.logs({ runId: rid, containerId }) };
+    const logs: RunLogSource = {
+      follow: async function* (rid, containerId) {
+        yield* exec.logs({ runId: rid, containerId });
+        if (failMidStream) throw new Error("executor host went away");
+      },
+    };
     const auth = new PortalAuth({ issuer: ISSUER, audience: AUDIENCE, keys: createLocalJWKSet({ keys: [jwk] }) });
     app = await NestFactory.create(PortalModule.forRoot(new PortalService(db, logs, clock), auth), { logger: false });
     await app.listen(0);
@@ -88,6 +94,17 @@ describe.skipIf(skipIntegration)("FR-POR-001/002/004 Agent Operations Portal API
     expect(detail.steps).toEqual([expect.objectContaining({ step: "S4", status: "running" })]);
     expect(detail.timeline.map((e) => e.action)).toEqual(["run.create", "run.state", "run.state"]);
     expect((await call("/api/runs/00000000-0000-0000-0000-000000000000", await as(["viewer"]))).status).toBe(404);
+  });
+
+  it("a log source that fails mid-stream ends the response cleanly after the lines already sent", async () => {
+    failMidStream = true;
+    try {
+      const res = await call(`/api/runs/${runId}/logs`, await as(["operator"]));
+      expect(res.status).toBe(200);
+      expect((await res.text()).trim().split("\n")).toHaveLength(2);
+    } finally {
+      failMidStream = false;
+    }
   });
 
   it("FR-POR-001 live logs stream as NDJSON to operators; viewers may not read them", async () => {

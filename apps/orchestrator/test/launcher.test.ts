@@ -130,18 +130,20 @@ describe.skipIf(skipIntegration)("AT-P0-02 failed runs escalate to a human (orch
     await h.close();
   });
 
-  async function failRun(taskKey: string, status: string): Promise<string> {
-    jira.seed({ key: taskKey, type: "Task", status, summary: "t", description: "" });
+  /** Claims and launches `taskKey` from In Progress; `humanStatus` is set by a human during the run. */
+  async function failRun(taskKey: string, humanStatus?: string): Promise<string> {
+    jira.seed({ key: taskKey, type: "Task", status: "In Progress", summary: "t", description: "" });
     h.source.queue = [candidate(h, taskKey)];
     const [claim] = (await h.orch.dispatcher.tick()).claimed;
     await h.orch.worker?.drain();
+    if (humanStatus) jira.humanEdit(taskKey, { status: humanStatus });
     exec.exit(exec.byRun(claim?.runId ?? "")?.containerId ?? "", 1);
     await h.orch.supervisor?.tick();
     return claim?.runId ?? "";
   }
 
   it("AT-P0-02 moves the Jira task to Needs Human (audited) and raises run.needs-human for the role owners", async () => {
-    const runId = await failRun("PILOT-20", "In Progress");
+    const runId = await failRun("PILOT-20");
     expect(jira.issues.get("PILOT-20")?.status).toBe("Needs Human");
     const [n] = await new NotificationRepository(h.orch.db).unrouted();
     expect(n).toMatchObject({ event: "run.needs-human", severity: "high", audience: "role:dummy", link: `/runs/${runId}`, dedupeKey: "run.needs-human:PILOT-20" });
@@ -150,6 +152,7 @@ describe.skipIf(skipIntegration)("AT-P0-02 failed runs escalate to a human (orch
 
   it("FR-JIRA-002 a status that cannot go to Needs Human is left alone, but the human is still notified", async () => {
     await failRun("PILOT-21", "Done");
+    expect(exec.containers.size).toBe(1); // it did run: Done was set by a human afterwards
     expect(jira.issues.get("PILOT-21")?.status).toBe("Done");
     expect(jira.calls.some((c) => c.startsWith("transition PILOT-21"))).toBe(false);
     expect(await new NotificationRepository(h.orch.db).unrouted()).toHaveLength(1);
@@ -169,5 +172,70 @@ describe.skipIf(skipIntegration)("AT-P0-02 failed runs escalate to a human (orch
     await h.orch.supervisor?.tick();
     expect(jira.issues.get("PILOT-22")?.status).toBe("In Progress");
     expect(await new NotificationRepository(h.orch.db).unrouted()).toHaveLength(1);
+  });
+});
+
+describe.skipIf(skipIntegration)("AT-P0-01 the Jira task follows its run (orchestrator side)", () => {
+  let h: Harness;
+  let exec: FakeExecutorBackend;
+  let jira: FakeIssueTracker;
+
+  beforeEach(async () => {
+    exec = new FakeExecutorBackend();
+    jira = new FakeIssueTracker();
+    h = await harness(ENV, exec, jira);
+  });
+  afterEach(async () => {
+    await h.close();
+  });
+
+  it("AT-P0-01 claiming moves To Do -> In Progress; a successful run moves it to In Review; both audited", async () => {
+    jira.seed({ key: "PILOT-30", type: "Task", status: "To Do", summary: "t", description: "" });
+    h.source.queue = [candidate(h, "PILOT-30")];
+    const [claim] = (await h.orch.dispatcher.tick()).claimed;
+    await h.orch.worker?.drain();
+    expect(jira.issues.get("PILOT-30")?.status).toBe("In Progress");
+    exec.exit(exec.byRun(claim?.runId ?? "")?.containerId ?? "", RUN_EXIT_CODES.succeeded);
+    await h.orch.supervisor?.tick();
+    expect(jira.issues.get("PILOT-30")?.status).toBe("In Review");
+    const moves = (await new AuditRepository(h.orch.db).list()).filter((e) => e.action === "task.status").map((e) => e.reason);
+    expect(moves).toEqual([`To Do -> In Progress: claimed by run ${claim?.runId ?? ""}`, `In Progress -> In Review: run ${claim?.runId ?? ""} succeeded`]);
+  });
+
+  it("FR-JIRA-002 a task a human moved after it was offered is not started: lease released, run retired", async () => {
+    jira.seed({ key: "PILOT-31", type: "Task", status: "To Do", summary: "t", description: "" });
+    h.source.queue = [candidate(h, "PILOT-31")];
+    const [claim] = (await h.orch.dispatcher.tick()).claimed;
+    jira.humanEdit("PILOT-31", { status: "Blocked" });
+    await h.orch.worker?.drain();
+    expect(exec.containers.size).toBe(0);
+    expect(jira.issues.get("PILOT-31")?.status).toBe("Blocked");
+    expect(await new LeaseRepository(h.orch.db).get("PILOT-31")).toBeNull();
+    expect(await new AgentRunRepository(h.orch.db).get(claim?.runId ?? "")).toMatchObject({ state: "stopped" });
+  });
+
+  it("FR-JIRA-002 a human edit racing the claim wins; the run is not started", async () => {
+    jira.seed({ key: "PILOT-32", type: "Task", status: "To Do", summary: "t", description: "" });
+    const realTransition = jira.transition.bind(jira);
+    jira.transition = (key, to, version) => {
+      jira.humanEdit(key, { status: "Needs Clarification" });
+      return realTransition(key, to, version);
+    };
+    h.source.queue = [candidate(h, "PILOT-32")];
+    await h.orch.dispatcher.tick();
+    await h.orch.worker?.drain();
+    expect(exec.containers.size).toBe(0);
+    expect(jira.issues.get("PILOT-32")?.status).toBe("Needs Clarification");
+  });
+
+  it("a Jira outage during In Review hand-over is logged; the run still ends cleanly", async () => {
+    jira.seed({ key: "PILOT-33", type: "Task", status: "To Do", summary: "t", description: "" });
+    h.source.queue = [candidate(h, "PILOT-33")];
+    const [claim] = (await h.orch.dispatcher.tick()).claimed;
+    await h.orch.worker?.drain();
+    jira.getIssue = () => Promise.reject(new Error("jira down"));
+    exec.exit(exec.byRun(claim?.runId ?? "")?.containerId ?? "", RUN_EXIT_CODES.succeeded);
+    expect(await h.orch.supervisor?.tick()).toMatchObject([{ state: "succeeded" }]);
+    expect(await new LeaseRepository(h.orch.db).get("PILOT-33")).toBeNull();
   });
 });

@@ -185,3 +185,18 @@ Notes:
 - **AT-P0-02 passes** (time-compressed: on-duty → backup → Program Lead → ack).
 - **Deferred:** portal screenshots and Playwright e2e with Keycloak (P0-WP11); log-source topology (P0-WP11); full catalogue and digest (P3-WP6). |
 | others | not started |
+
+## 7. P0-WP11 breakdown (2026-11-06)
+
+WP11 is the first time the services run as separate processes, so it starts by giving every service an entrypoint. Steps, each a commit on `phase-0/p0-wp11-deploy-load-failover`:
+
+| Step | Content | Proves |
+|---|---|---|
+| 11a | **Runnable services.** Adapter selection in `@adlc/adapters` (`ADAPTERS=dev-fakes` → HTTP clients for a fakes service; the real Jira/GitHub clients refuse to start until Q-04). `apps/dev-fakes` serves the in-memory fakes over HTTP, plus admin calls that stand in for humans (seed, edit, approve and merge). Entrypoints for the gateway and portal-api; the orchestrator wires the executor, the issue tracker and a **minimal ready source** (Jira `To Do` tasks of registered projects; the full ready frontier FR-ORC-005 stays Phase 2). Live logs: the portal-api reads them from the orchestrator over an internal authenticated route, so only the executor host touches Docker. | units + integration |
+| 11b | **Compose stack** (`infra/compose`, `pnpm dev:up`): PostgreSQL primary + streaming replica, one-shot migrate, dev-fakes, gateway (also on the internal agent network), two orchestrator replicas, notifier, portal-api, portal-web, Keycloak (dev realm), Mailpit (SMTP sink), SeaweedFS. Images pinned by digest. Services connect as an application DB role without UPDATE/DELETE/TRUNCATE on the write-once tables. | stack health |
+| 11c | **AT-P0-05:** k6 scenario (`pnpm test:load`) seeds 20 dummy tasks and checks dispatch latency < 30 s, no heartbeat loss and that the portal lists all 20 runs. | AT-P0-05 |
+| 11d | **AT-P0-06:** failover runbook and drill script: stop the primary, promote the replica, re-point the `db` alias, measure RTO; the leader is re-elected and leases resume. | AT-P0-06 |
+| 11e | **AT-P0-01 with fakes:** fake CI posts `adlc/verify`, minimal review trigger + signer posts `adlc/evidence`, a human approves and merges through the dev-fakes admin call, the orchestrator sets Done. Playwright e2e and portal screenshots with Keycloak. | AT-P0-01 (fakes half) |
+| 11f | WORM export of audit and evidence to SeaweedFS (ADR-0006). | NFR audit |
+
+Decisions recorded in ADR-0014. The executor host role means the orchestrator container gets the rootless Docker socket. Agent containers never do (hard rule 6), and Kubernetes replaces this post-pilot.

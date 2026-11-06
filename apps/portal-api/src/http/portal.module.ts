@@ -73,11 +73,16 @@ export class PortalController {
     req.on("close", () => {
       disconnected.abort();
     });
-    for await (const line of lines) {
-      if (disconnected.signal.aborted) break;
-      res.write(`${JSON.stringify(line)}\n`);
+    try {
+      for await (const line of lines) {
+        if (disconnected.signal.aborted) break;
+        res.write(`${JSON.stringify(line)}\n`);
+      }
+    } catch {
+      // The source failed mid-stream (e.g. the executor host went away): end the stream cleanly.
+    } finally {
+      res.end();
     }
-    res.end();
   }
 
   @Get("inbox")

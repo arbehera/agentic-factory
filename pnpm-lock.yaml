@@ -106,6 +106,25 @@ importers:
         specifier: 0.2.2
         version: 0.2.2
 
+  apps/dev-fakes:
+    dependencies:
+      '@adlc/telemetry':
+        specifier: workspace:*
+        version: link:../../packages/telemetry
+      '@adlc/testing':
+        specifier: workspace:*
+        version: link:../../packages/testing
+      zod:
+        specifier: 4.1.12
+        version: 4.1.12
+    devDependencies:
+      '@adlc/adapters':
+        specifier: workspace:*
+        version: link:../../packages/adapters
+      '@types/node':
+        specifier: 22.18.12
+        version: 22.18.12
+
   apps/gateway:
     dependencies:
       '@adlc/adapters':
@@ -282,6 +301,9 @@ importers:
       '@adlc/executor':
         specifier: workspace:*
         version: link:../../packages/executor
+      '@adlc/telemetry':
+        specifier: workspace:*
+        version: link:../../packages/telemetry
       '@nestjs/common':
         specifier: 11.1.6
         version: 11.1.6(reflect-metadata@0.2.2)(rxjs@7.8.2)
@@ -300,10 +322,10 @@ importers:
       rxjs:
         specifier: 7.8.2
         version: 7.8.2
+      zod:
+        specifier: 4.1.12
+        version: 4.1.12
     devDependencies:
-      '@adlc/telemetry':
-        specifier: workspace:*
-        version: link:../../packages/telemetry
       '@adlc/testing':
         specifier: workspace:*
         version: link:../../packages/testing
