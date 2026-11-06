@@ -52,7 +52,7 @@ describe("P0-WP11 portal API deployment", () => {
   });
 
   it("no replica has the log: NotFoundError", async () => {
-    const source = new OrchestratorLogSource(["http://other:3000"], "t", (() => Promise.resolve(new Response(null, { status: 404 }))) as unknown as typeof fetch);
+    const source = new OrchestratorLogSource(["http://other:3000"], "t", () => Promise.resolve(new Response(null, { status: 404 })));
     await expect(source.follow("run-1")).rejects.toBeInstanceOf(NotFoundError);
   });
 });

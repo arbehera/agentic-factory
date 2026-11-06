@@ -24,9 +24,9 @@
   "dependencies": {
     "@adlc/adapters": "workspace:*",
     "@adlc/executor": "workspace:*",
-    "@testcontainers/postgresql": "11.7.1",
+    "@testcontainers/postgresql": "12.2.1",
     "pg": "8.16.3",
-    "vitest": "3.2.6"
+    "vitest": "5.1.0"
   },
   "devDependencies": {
     "@types/pg": "8.15.5"

@@ -15,6 +15,12 @@ describe("P0-WP11 signer service configuration", () => {
     expect(() => buildSigner(prod, { reviewerSets: { sets: {} }, clock: { now: () => new Date() }, logger: silent, scm: new FakeSourceControl() })).toThrow(/production/);
     expect(signerConfigSchema.parse({ ...base, SIGNER_ENVIRONMENT: "dev", REQUIRED_CHECKS: "adlc/verify, adlc/paths" }).REQUIRED_CHECKS).toEqual(["adlc/verify", "adlc/paths"]);
   });
+
+  it("ADR-0014 without an injected client the signer builds its source-control client from ADAPTERS", async () => {
+    const svc = buildSigner(signerConfigSchema.parse({ ...base, SIGNER_ENVIRONMENT: "dev" }), { reviewerSets: { sets: {} }, clock: { now: () => new Date() }, logger: silent });
+    expect(svc.keyId).toMatch(/\S/);
+    await svc.pool.end(); // never connected: the pool is lazy
+  });
 });
 
 describe.skipIf(skipIntegration)("P0-WP11 signer service", () => {

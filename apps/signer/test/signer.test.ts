@@ -99,6 +99,15 @@ describe.skipIf(skipIntegration)("FR-EVD-002 evidence signer", () => {
     expect(await signer.signPullRequest("org/product", 1, "dummy")).toMatchObject({ signed: true, headSha: newHead });
   });
 
+  it("FR-EVD-002 a refusal reason longer than GitHub's 140-character status description is shortened, not rejected", async () => {
+    const longRole = `reviewer-${"x".repeat(150)}`;
+    const strict = new SignerService(db, scm, key, { reviewerSets: { sets: { dummy: [longRole] } }, requiredChecks: ["adlc/verify"] }, clock, createLogger("signer-test", { level: "silent" }));
+    expect(await strict.signPullRequest("org/product", 1, "dummy")).toMatchObject({ signed: false, reasons: [`missing verdict from required reviewer ${longRole}`] });
+    const description = evidenceStatus(head)?.description ?? "";
+    expect(description).toHaveLength(140);
+    expect(description.endsWith("...")).toBe(true);
+  });
+
   it("FR-EVD-002 refuses author roles without a reviewer set, unknown PRs and repositories outside any project", async () => {
     await verdict();
     expect(await signer.signPullRequest("org/product", 1, "engineer")).toEqual({ signed: false, headSha: head, reasons: ["no reviewer set is configured for the author role"] });

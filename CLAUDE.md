@@ -33,7 +33,7 @@ TypeScript (strict), Node.js 22, pnpm workspaces + Turborepo, NestJS, React + Vi
 ```bash
 pnpm install
 pnpm build                 # turbo build
-pnpm lint && pnpm typecheck   # lint builds workspace packages first: type-aware rules read their dist/ types
+pnpm lint && pnpm typecheck   # lint builds workspace packages first: type-aware rules read their dist/ types (4 GB heap for type-aware lint)
 pnpm test                  # unit + integration (Testcontainers)
 pnpm test:coverage
 pnpm check:neutrality      # core-neutrality deny-list check (FR-PCK-005)

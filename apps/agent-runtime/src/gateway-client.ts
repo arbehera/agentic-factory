@@ -1,6 +1,5 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
-import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
 
 export type HeartbeatDirective = "continue" | "stop-after-step" | "stop";
 
@@ -89,7 +88,7 @@ export class GatewayClient {
         });
         try {
           // The SDK's own types disagree under exactOptionalPropertyTypes; runtime is fine.
-          await client.connect(transport as unknown as Transport);
+          await client.connect(transport);
         } catch (err) {
           throw new GatewayUnavailableError(`cannot reach the gateway (${server}): ${(err as Error).message}`);
         }

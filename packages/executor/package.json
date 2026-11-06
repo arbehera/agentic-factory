@@ -20,7 +20,7 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
-    "dockerode": "4.0.7"
+    "dockerode": "4.0.12"
   },
   "devDependencies": {
     "@types/dockerode": "3.3.42",

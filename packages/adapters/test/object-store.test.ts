@@ -29,7 +29,7 @@ describe("ADR-0006 S3 object store client", () => {
       calls.push({ method: init.method ?? "GET", url, headers: init.headers as Record<string, string>, body: init.body });
       return Promise.resolve(responses(url, init));
     };
-    return { s: new S3ObjectStore(settings, fetchImpl as typeof fetch, () => new Date("2026-11-06T00:00:00Z")), calls };
+    return { s: new S3ObjectStore(settings, fetchImpl, () => new Date("2026-11-06T00:00:00Z")), calls };
   }
 
   it("NFR-006 writes objects with a compliance lock, signed, path-style", async () => {

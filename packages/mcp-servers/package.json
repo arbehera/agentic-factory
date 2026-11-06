@@ -20,8 +20,8 @@
     "@adlc/db": "workspace:*",
     "@adlc/domain": "workspace:*",
     "@adlc/schemas": "workspace:*",
-    "picomatch": "4.0.3",
-    "zod": "4.1.12"
+    "picomatch": "4.0.7",
+    "zod": "4.6.7"
   },
   "devDependencies": {
     "@adlc/testing": "workspace:*",

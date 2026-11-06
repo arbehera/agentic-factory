@@ -1,6 +1,6 @@
 import { verifyAuditExport } from "@adlc/control-plane";
 import { InMemoryObjectStore } from "@adlc/testing";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { loadConfig } from "../src/config.js";
 import { connectObjectStore, ObjectStoreConfigError } from "../src/object-store.js";
 import { harness, skipIntegration, type Harness } from "./helpers.js";
@@ -15,6 +15,23 @@ describe("NFR-006 write-once export configuration", () => {
 
   it("NFR-006 incomplete store credentials are refused before any request", async () => {
     await expect(connectObjectStore({ OBJECT_STORE_ENDPOINT: "http://store:8333", OBJECT_STORE_BUCKET: "adlc-audit" })).rejects.toBeInstanceOf(ObjectStoreConfigError);
+  });
+
+  it("NFR-006 the export refuses a bucket without Object Lock; provisioning may skip the check", async () => {
+    const env = { OBJECT_STORE_ENDPOINT: "http://store:8333", OBJECT_STORE_BUCKET: "adlc-audit", OBJECT_STORE_ACCESS_KEY_ID: "exporter", OBJECT_STORE_SECRET_ACCESS_KEY: "s".repeat(32) };
+    const lock = (enabled: boolean) => vi.fn(() => Promise.resolve(new Response(`<ObjectLockConfiguration><ObjectLockEnabled>${enabled ? "Enabled" : "Disabled"}</ObjectLockEnabled></ObjectLockConfiguration>`)));
+    try {
+      vi.stubGlobal("fetch", lock(false));
+      await expect(connectObjectStore(env)).rejects.toThrow(/no Object Lock; refusing a write-once export/);
+      const unchecked = lock(false);
+      vi.stubGlobal("fetch", unchecked);
+      await expect(connectObjectStore(env, { requireLock: false })).resolves.toBeDefined();
+      expect(unchecked).not.toHaveBeenCalled();
+      vi.stubGlobal("fetch", lock(true));
+      await expect(connectObjectStore(env)).resolves.toBeDefined();
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 });
 
